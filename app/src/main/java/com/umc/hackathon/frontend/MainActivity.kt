@@ -39,11 +39,11 @@ fun MainScreen(modifier: Modifier = Modifier) {
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            text = "UMC Hackathon",
+            text = "MogiMap",
             style = MaterialTheme.typography.headlineMedium
         )
         Text(
-            text = "Jetpack Compose setup is ready.",
+            text = "우리 동네 모기 위험도를 확인하세요.",
             style = MaterialTheme.typography.bodyLarge
         )
     }
