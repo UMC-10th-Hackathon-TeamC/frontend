@@ -1,6 +1,8 @@
 package com.umc.hackathon.frontend.feature.onboarding
 
+import android.content.Intent
 import android.graphics.BitmapFactory
+import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -37,15 +39,26 @@ fun OnboardingRoute(
     onEnterHome: () -> Unit,
     viewModel: OnboardingViewModel = viewModel()
 ) {
+    val context = LocalContext.current
     val uiState = viewModel.uiState
 
     OnboardingScreen(
         appName = uiState.appName,
         subtitle = uiState.subtitle,
-        onGoogleClick = onEnterHome,
+        onGoogleClick = {
+            context.startActivity(
+                Intent(
+                    Intent.ACTION_VIEW,
+                    Uri.parse(GOOGLE_LOGIN_URL)
+                )
+            )
+        },
         onGuestClick = onEnterHome
     )
 }
+
+private const val GOOGLE_LOGIN_URL =
+    "http://10.0.2.2:3000/api/v1/oauth2/login/google" // 10.0.2.2 에뮬레이터 테스트 주소
 
 @Composable
 private fun OnboardingScreen(

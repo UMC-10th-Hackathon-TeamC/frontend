@@ -3,6 +3,7 @@ package com.umc.hackathon.frontend.core.navigation
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -17,10 +18,22 @@ import com.umc.hackathon.frontend.feature.community.WritePostRoute
 @Composable
 fun MogiMapNavHost(
     innerPadding: PaddingValues,
-    startDestination: String = AppRoute.Onboarding.path
+    startDestination: String = AppRoute.Onboarding.path,
+    oauthCallbackVersion: Int = 0
 ) {
     val navController = rememberNavController()
     val modifier = Modifier.padding(innerPadding)
+
+    LaunchedEffect(oauthCallbackVersion) {
+        if (oauthCallbackVersion > 0) {
+            navController.navigate(AppRoute.Home.path) {
+                popUpTo(AppRoute.Onboarding.path) {
+                    inclusive = true
+                }
+                launchSingleTop = true
+            }
+        }
+    }
 
     NavHost(
         navController = navController,
