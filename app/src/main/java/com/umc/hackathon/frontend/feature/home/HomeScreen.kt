@@ -24,6 +24,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.umc.hackathon.frontend.feature.community.CommunitySheet
 import com.umc.hackathon.frontend.feature.district.DistrictInfoSheet
 import com.umc.hackathon.frontend.feature.ranking.RankingSheet
+import androidx.compose.foundation.clickable
 
 @Composable
 fun HomeRoute(
@@ -65,6 +66,7 @@ private fun HomeScreen(
                     color = MaterialTheme.colorScheme.primary,
                     shape = RoundedCornerShape(32.dp)
                 )
+                .clickable { onMyPageClick() }
                 .padding(horizontal = 18.dp, vertical = 12.dp)
         ) {
             Text(
