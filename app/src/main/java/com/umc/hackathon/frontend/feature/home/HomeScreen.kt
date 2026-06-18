@@ -16,6 +16,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,7 +44,8 @@ fun HomeRoute(
             }
         },
         onMyPageClick = onNavigateToMyPage,
-        onDismissSheet = viewModel::dismissSheets
+        onDismissSheet = viewModel::dismissSheets,
+        onDismissLoginPrompt = viewModel::dismissLoginPrompt
     )
 }
 
@@ -55,8 +57,13 @@ private fun HomeScreen(
     onCommunityClick: () -> Unit,
     onWriteClick: () -> Unit,
     onMyPageClick: () -> Unit,
-    onDismissSheet: () -> Unit
+    onDismissSheet: () -> Unit,
+    onDismissLoginPrompt: () -> Unit
 ) {
+    val communitySheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = true
+    )
+
     // 구 상세/커뮤니티/로그인 시트가 열리지 않았을 때만 랭킹 시트를 보여준다.
     val shouldShowRankingSheet =
         !uiState.isDistrictSheetVisible &&
@@ -118,20 +125,28 @@ private fun HomeScreen(
     }
 
     // 구 상세에서 커뮤니티 보기 클릭 시 열리는 커뮤니티 바텀시트.
-    if (uiState.isCommunitySheetVisible) {
-        ModalBottomSheet(onDismissRequest = onDismissSheet) {
+    if (uiState.isCommunitySheetVisible && !uiState.isLoginPromptVisible) {
+        ModalBottomSheet(
+            onDismissRequest = onDismissSheet,
+            containerColor = MaterialTheme.colorScheme.surface,
+            sheetState = communitySheetState
+        ) {
             CommunitySheet(
                 districtName = uiState.selectedDistrict ?: "강남구",
                 posts = uiState.recentPosts,
-                onWriteClick = onWriteClick
+                onWriteClick = onWriteClick,
+                onCloseClick = onDismissSheet,
+                onCollapseClick = {
+                    onDistrictClick(uiState.selectedDistrict ?: "강남구")
+                }
             )
         }
     }
 
     // 비로그인 사용자가 글쓰기 시도 시 열리는 로그인 유도 바텀시트.
     if (uiState.isLoginPromptVisible) {
-        ModalBottomSheet(onDismissRequest = onDismissSheet) {
-            LoginPromptSheet(onDismiss = onDismissSheet)
+        ModalBottomSheet(onDismissRequest = onDismissLoginPrompt) {
+            LoginPromptSheet(onDismiss = onDismissLoginPrompt)
         }
     }
 }

@@ -79,7 +79,7 @@ class HomeViewModel(
         uiState = uiState.copy(
             isRankingSheetVisible = false,
             isDistrictSheetVisible = false,
-            isCommunitySheetVisible = false,
+            isCommunitySheetVisible = true,
             isLoginPromptVisible = true
         )
         return false
@@ -90,6 +90,12 @@ class HomeViewModel(
             isRankingSheetVisible = false,
             isDistrictSheetVisible = false,
             isCommunitySheetVisible = false,
+            isLoginPromptVisible = false
+        )
+    }
+
+    fun dismissLoginPrompt() {
+        uiState = uiState.copy(
             isLoginPromptVisible = false
         )
     }
