@@ -60,6 +60,7 @@ private fun HomeScreen(
     Box(modifier = Modifier.fillMaxSize()) {
         HomeMap(
             districts = uiState.districtIndexes,
+            selectedDistrict = uiState.selectedDistrict,
             onDistrictClick = onDistrictClick,
             modifier = Modifier.fillMaxSize()
         )

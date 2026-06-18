@@ -15,15 +15,18 @@ fun createDistrictMarkerBitmap(
     context: Context,
     districtName: String,
     mosquitoIndex: Int,
-    level: MosquitoLevel
+    level: MosquitoLevel,
+    selected: Boolean = false
 ): Bitmap {
+    val scale = if (selected) 1.15f else 1f
+
     // 마커 내부 여백, 텍스트 간격, 테두리 두께 등을 dp/sp 기준으로 px로 변환
-    val horizontalPadding = context.dpToPx(16f)
-    val verticalPadding = context.dpToPx(8f)
-    val gap = context.dpToPx(8f)
-    val strokeWidth = context.dpToPx(3f)
-    val cornerRadius = context.dpToPx(24f)
-    val textSize = context.spToPx(15f)
+    val horizontalPadding = context.dpToPx(16f * scale)
+    val verticalPadding = context.dpToPx(8f * scale)
+    val gap = context.dpToPx(8f * scale)
+    val strokeWidth = context.dpToPx(if (selected) 4f else 3f)
+    val cornerRadius = context.dpToPx(24f * scale)
+    val textSize = context.spToPx(15f * scale)
 
     // 구 이름과 모기지수 숫자에 공통으로 사용할 텍스트 스타일
     val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {

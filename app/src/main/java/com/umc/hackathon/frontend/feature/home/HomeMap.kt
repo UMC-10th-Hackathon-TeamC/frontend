@@ -11,7 +11,9 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.naver.maps.geometry.LatLng
+import com.naver.maps.map.CameraAnimation
 import com.naver.maps.map.CameraPosition
+import com.naver.maps.map.CameraUpdate
 import com.naver.maps.map.MapView
 import com.naver.maps.map.NaverMap
 import com.naver.maps.map.NaverMapOptions
@@ -23,6 +25,7 @@ import com.umc.hackathon.frontend.feature.home.map.createDistrictMarkerBitmap
 @Composable
 fun HomeMap(
     districts: List<DistrictMosquitoIndex>,
+    selectedDistrict: String?,
     onDistrictClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -67,9 +70,8 @@ fun HomeMap(
     *  지도 옆 +/- 표시 제외 나침반 표시 등 제외
     *  Layer 제외
     *  커스텀 지도 적용
-    *  커스텀 마커 디자인 적용
     * */
-    LaunchedEffect(mapView, districts) {
+    LaunchedEffect(mapView) {
         mapView.getMapAsync { naverMap ->
             naverMap.locale = Locale.KOREAN
             naverMap.setCustomStyleId(MOGI_MAP_STYLE_ID)
@@ -85,11 +87,18 @@ fun HomeMap(
                 LatLng(37.5665, 126.9780),
                 10.5
             )
+        }
+    }
 
+    /* 선택된 구가 바뀔 때마다 마커를 다시 그려 선택 마커만 크게 표시 */
+    LaunchedEffect(mapView, districts, selectedDistrict) {
+        mapView.getMapAsync { naverMap ->
             markers.forEach { it.map = null }
             markers.clear()
 
             districts.forEach { district ->
+                val selected = district.districtName == selectedDistrict
+
                 val marker = Marker().apply {
                     position = LatLng(district.latitude, district.longitude)
                     icon = OverlayImage.fromBitmap(
@@ -97,10 +106,17 @@ fun HomeMap(
                             context = context,
                             districtName = district.districtName,
                             mosquitoIndex = district.mosquitoIndex,
-                            level = district.level
+                            level = district.level,
+                            selected = selected
                         )
                     )
+                    zIndex = if (selected) 10 else 0
                     setOnClickListener {
+                        naverMap.moveCamera(
+                            CameraUpdate.scrollTo(
+                                LatLng(district.latitude, district.longitude)
+                            ).animate(CameraAnimation.Easing, 500)
+                        )
                         onDistrictClick(district.districtName)
                         true
                     }
