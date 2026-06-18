@@ -1,6 +1,7 @@
 package com.umc.hackathon.frontend.feature.home
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,7 +25,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.umc.hackathon.frontend.feature.community.CommunitySheet
 import com.umc.hackathon.frontend.feature.district.DistrictInfoSheet
 import com.umc.hackathon.frontend.feature.ranking.RankingSheet
-import androidx.compose.foundation.clickable
 
 @Composable
 fun HomeRoute(
@@ -34,6 +34,7 @@ fun HomeRoute(
 ) {
     HomeScreen(
         uiState = viewModel.uiState,
+        onDistrictClick = viewModel::showDistrictSheet,
         onCommunityClick = viewModel::showCommunitySheet,
         onWriteClick = {
             val districtName = viewModel.uiState.selectedDistrict ?: "강남구"
@@ -50,13 +51,18 @@ fun HomeRoute(
 @Composable
 private fun HomeScreen(
     uiState: HomeUiState,
+    onDistrictClick: (String) -> Unit,
     onCommunityClick: () -> Unit,
     onWriteClick: () -> Unit,
     onMyPageClick: () -> Unit,
     onDismissSheet: () -> Unit
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
-        HomeMap(modifier = Modifier.fillMaxSize())
+        HomeMap(
+            districts = uiState.districtIndexes,
+            onDistrictClick = onDistrictClick,
+            modifier = Modifier.fillMaxSize()
+        )
 
         Box(
             modifier = Modifier
