@@ -14,7 +14,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -34,8 +33,6 @@ fun HomeRoute(
 ) {
     HomeScreen(
         uiState = viewModel.uiState,
-        onRankingClick = viewModel::showRankingSheet,
-        onDistrictClick = { viewModel.showDistrictSheet("강남구") },
         onCommunityClick = viewModel::showCommunitySheet,
         onWriteClick = {
             val districtName = viewModel.uiState.selectedDistrict ?: "강남구"
@@ -52,53 +49,13 @@ fun HomeRoute(
 @Composable
 private fun HomeScreen(
     uiState: HomeUiState,
-    onRankingClick: () -> Unit,
-    onDistrictClick: () -> Unit,
     onCommunityClick: () -> Unit,
     onWriteClick: () -> Unit,
     onMyPageClick: () -> Unit,
     onDismissSheet: () -> Unit
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.surfaceContainerLow)
-                .padding(24.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "Home(Map)",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                text = "지도 SDK와 자치구 오버레이가 들어갈 자리",
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(modifier = Modifier.height(28.dp))
-            Button(onClick = onRankingClick) {
-                Text(text = "랭킹 바텀시트 보기")
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Button(onClick = onDistrictClick) {
-                Text(text = "강남구 정보 시트 보기")
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Button(onClick = onCommunityClick) {
-                Text(text = "커뮤니티 바텀시트 보기")
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            OutlinedButton(onClick = onWriteClick) {
-                Text(text = "글쓰기 테스트")
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            OutlinedButton(onClick = onMyPageClick) {
-                Text(text = "마이페이지")
-            }
-        }
+        HomeMap(modifier = Modifier.fillMaxSize())
 
         Box(
             modifier = Modifier
