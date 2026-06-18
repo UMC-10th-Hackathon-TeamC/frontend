@@ -15,10 +15,14 @@ import com.naver.maps.map.CameraPosition
 import com.naver.maps.map.MapView
 import com.naver.maps.map.NaverMap
 import com.naver.maps.map.NaverMapOptions
+import com.umc.hackathon.frontend.core.model.DistrictMosquitoIndex
 import java.util.Locale
+import com.naver.maps.map.overlay.Marker
 
 @Composable
 fun HomeMap(
+    districts: List<DistrictMosquitoIndex>,
+    onDistrictClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -72,6 +76,18 @@ fun HomeMap(
                 LatLng(37.5665, 126.9780),
                 10.5
             )
+
+            districts.forEach { district ->
+                Marker().apply {
+                    position = LatLng(district.latitude, district.longitude)
+                    captionText = "${district.districtName} ${district.mosquitoIndex}"
+                    setOnClickListener {
+                        onDistrictClick(district.districtName)
+                        true
+                    }
+                    map = naverMap
+                }
+            }
         }
     }
 
