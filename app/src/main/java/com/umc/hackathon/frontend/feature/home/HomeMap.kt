@@ -18,7 +18,8 @@ import com.naver.maps.map.NaverMapOptions
 import com.umc.hackathon.frontend.core.model.DistrictMosquitoIndex
 import java.util.Locale
 import com.naver.maps.map.overlay.Marker
-
+import com.naver.maps.map.overlay.OverlayImage
+import com.umc.hackathon.frontend.feature.home.map.createDistrictMarkerBitmap
 @Composable
 fun HomeMap(
     districts: List<DistrictMosquitoIndex>,
@@ -37,6 +38,9 @@ fun HomeMap(
             onCreate(null)
         }
     }
+
+    /* 마커 중복 방지 */
+    val markers = remember { mutableListOf<Marker>() }
 
     /* 안드로이드 생명주기를 지도와 맞춤 */
     DisposableEffect(lifecycle, mapView) {
@@ -59,8 +63,13 @@ fun HomeMap(
         }
     }
 
-    /* 서울시청 근처 좌표, 서울 전역이 보일 수 있는 수준의 줌*/
-    LaunchedEffect(mapView) {
+    /* 서울시청 근처 좌표, 서울 전역이 보일 수 있는 수준의 줌
+    *  지도 옆 +/- 표시 제외 나침반 표시 등 제외
+    *  Layer 제외
+    *  커스텀 지도 적용
+    *  커스텀 마커 디자인 적용
+    * */
+    LaunchedEffect(mapView, districts) {
         mapView.getMapAsync { naverMap ->
             naverMap.locale = Locale.KOREAN
             naverMap.setCustomStyleId(MOGI_MAP_STYLE_ID)
@@ -77,16 +86,28 @@ fun HomeMap(
                 10.5
             )
 
+            markers.forEach { it.map = null }
+            markers.clear()
+
             districts.forEach { district ->
-                Marker().apply {
+                val marker = Marker().apply {
                     position = LatLng(district.latitude, district.longitude)
-                    captionText = "${district.districtName} ${district.mosquitoIndex}"
+                    icon = OverlayImage.fromBitmap(
+                        createDistrictMarkerBitmap(
+                            context = context,
+                            districtName = district.districtName,
+                            mosquitoIndex = district.mosquitoIndex,
+                            level = district.level
+                        )
+                    )
                     setOnClickListener {
                         onDistrictClick(district.districtName)
                         true
                     }
                     map = naverMap
                 }
+
+                markers.add(marker)
             }
         }
     }
