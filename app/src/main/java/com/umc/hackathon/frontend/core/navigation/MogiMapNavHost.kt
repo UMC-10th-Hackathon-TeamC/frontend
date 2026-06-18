@@ -19,19 +19,21 @@ import com.umc.hackathon.frontend.feature.community.WritePostRoute
 fun MogiMapNavHost(
     innerPadding: PaddingValues,
     startDestination: String = AppRoute.Onboarding.path,
-    oauthCallbackVersion: Int = 0
+    shouldNavigateHome: Boolean = false,
+    onHomeNavigationHandled: () -> Unit = {}
 ) {
     val navController = rememberNavController()
     val modifier = Modifier.padding(innerPadding)
 
-    LaunchedEffect(oauthCallbackVersion) {
-        if (oauthCallbackVersion > 0) {
+    LaunchedEffect(shouldNavigateHome) {
+        if (shouldNavigateHome) {
             navController.navigate(AppRoute.Home.path) {
                 popUpTo(AppRoute.Onboarding.path) {
                     inclusive = true
                 }
                 launchSingleTop = true
             }
+            onHomeNavigationHandled()
         }
     }
 

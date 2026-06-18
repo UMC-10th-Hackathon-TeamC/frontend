@@ -8,7 +8,6 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Scaffold
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.lifecycleScope
@@ -19,7 +18,7 @@ import com.umc.hackathon.frontend.ui.theme.UMCHackathonFrontendTheme
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
-    private val oauthCallbackVersion = mutableIntStateOf(0)
+    private val shouldNavigateHome = mutableStateOf(false)
     private val startDestination = mutableStateOf<String?>(null)
     private lateinit var authTokenStore: AuthTokenStore
 
@@ -39,7 +38,10 @@ class MainActivity : ComponentActivity() {
                         MogiMapNavHost(
                             innerPadding = innerPadding,
                             startDestination = destination,
-                            oauthCallbackVersion = oauthCallbackVersion.intValue
+                            shouldNavigateHome = shouldNavigateHome.value,
+                            onHomeNavigationHandled = {
+                                shouldNavigateHome.value = false
+                            }
                         )
                     }
                 }
@@ -62,14 +64,15 @@ class MainActivity : ComponentActivity() {
         val userId = uri.getQueryParameter("userId").orEmpty()
         if (accessToken.isBlank() || refreshToken.isBlank()) return false
 
+        startDestination.value = AppRoute.Home.path
+        shouldNavigateHome.value = true
+
         lifecycleScope.launch {
             authTokenStore.saveTokens(
                 accessToken = accessToken,
                 refreshToken = refreshToken,
                 userId = userId
             )
-            startDestination.value = AppRoute.Home.path
-            oauthCallbackVersion.intValue += 1
         }
         return true
     }
