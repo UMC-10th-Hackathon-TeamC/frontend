@@ -9,31 +9,37 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.lifecycleScope
+import com.umc.hackathon.frontend.core.data.AuthTokenStore
 import com.umc.hackathon.frontend.core.navigation.AppRoute
 import com.umc.hackathon.frontend.core.navigation.MogiMapNavHost
 import com.umc.hackathon.frontend.ui.theme.UMCHackathonFrontendTheme
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     private val oauthCallbackVersion = mutableIntStateOf(0)
+    private val startDestination = mutableStateOf<String?>(null)
+    private lateinit var authTokenStore: AuthTokenStore
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        authTokenStore = AuthTokenStore(applicationContext)
         handleOAuthCallback(intent)
+        loadStartDestination()
 
         setContent {
             UMCHackathonFrontendTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    MogiMapNavHost(
-                        innerPadding = innerPadding,
-                        startDestination = if (hasAccessToken()) {
-                            AppRoute.Home.path
-                        } else {
-                            AppRoute.Onboarding.path
-                        },
-                        oauthCallbackVersion = oauthCallbackVersion.intValue
-                    )
+                    startDestination.value?.let { destination ->
+                        MogiMapNavHost(
+                            innerPadding = innerPadding,
+                            startDestination = destination,
+                            oauthCallbackVersion = oauthCallbackVersion.intValue
+                        )
+                    }
                 }
             }
         }
@@ -51,21 +57,28 @@ class MainActivity : ComponentActivity() {
 
         val accessToken = uri.getQueryParameter("accessToken").orEmpty()
         val refreshToken = uri.getQueryParameter("refreshToken").orEmpty()
+        val userId = uri.getQueryParameter("userId").orEmpty()
         if (accessToken.isBlank() || refreshToken.isBlank()) return
 
-        getSharedPreferences(AUTH_PREFS_NAME, MODE_PRIVATE)
-            .edit()
-            .putString(KEY_ACCESS_TOKEN, accessToken)
-            .putString(KEY_REFRESH_TOKEN, refreshToken)
-            .apply()
-
-        oauthCallbackVersion.intValue += 1
+        lifecycleScope.launch {
+            authTokenStore.saveTokens(
+                accessToken = accessToken,
+                refreshToken = refreshToken,
+                userId = userId
+            )
+            startDestination.value = AppRoute.Home.path
+            oauthCallbackVersion.intValue += 1
+        }
     }
 
-    private fun hasAccessToken(): Boolean {
-        return !getSharedPreferences(AUTH_PREFS_NAME, MODE_PRIVATE)
-            .getString(KEY_ACCESS_TOKEN, null)
-            .isNullOrBlank()
+    private fun loadStartDestination() {
+        lifecycleScope.launch {
+            startDestination.value = if (authTokenStore.hasAccessToken()) {
+                AppRoute.Home.path
+            } else {
+                AppRoute.Onboarding.path
+            }
+        }
     }
 
     private fun Uri.isOAuthCallback(): Boolean {
@@ -75,9 +88,6 @@ class MainActivity : ComponentActivity() {
     }
 
     private companion object {
-        const val AUTH_PREFS_NAME = "auth"
-        const val KEY_ACCESS_TOKEN = "accessToken"
-        const val KEY_REFRESH_TOKEN = "refreshToken"
         const val OAUTH_CALLBACK_SCHEME = "mogi"
         const val OAUTH_CALLBACK_HOST = "oauth"
         const val OAUTH_CALLBACK_PATH = "/callback"
