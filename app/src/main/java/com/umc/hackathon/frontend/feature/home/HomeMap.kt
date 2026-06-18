@@ -10,6 +10,9 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.naver.maps.map.MapView
+import androidx.compose.runtime.LaunchedEffect
+import com.naver.maps.geometry.LatLng
+import com.naver.maps.map.CameraPosition
 
 @Composable
 fun HomeMap(
@@ -24,6 +27,7 @@ fun HomeMap(
         }
     }
 
+    /* 안드로이드 생명주기를 지도와 맞춤 */
     DisposableEffect(lifecycle, mapView) {
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
@@ -44,6 +48,17 @@ fun HomeMap(
         }
     }
 
+    /* 서울시청 근처 좌표, 서울 전역이 보일 수 있는 수준의 줌*/
+    LaunchedEffect(mapView) {
+        mapView.getMapAsync { naverMap ->
+            naverMap.cameraPosition = CameraPosition(
+                LatLng(37.5665, 126.9780),
+                10.5
+            )
+        }
+    }
+
+    /* 실제 지도 */
     AndroidView(
         modifier = modifier,
         factory = { mapView }
