@@ -90,13 +90,17 @@ private fun HomeScreen(
     }
 
     if (uiState.isDistrictSheetVisible) {
-        ModalBottomSheet(onDismissRequest = onDismissSheet) {
+        ModalBottomSheet(
+            onDismissRequest = onDismissSheet,
+            containerColor = MaterialTheme.colorScheme.surface
+        ) {
             DistrictInfoSheet(
                 selectedDistrict = uiState.districtIndexes.firstOrNull {
                     it.districtName == uiState.selectedDistrict
                 },
                 recentPosts = uiState.recentPosts,
-                onCommunityClick = onCommunityClick
+                onCommunityClick = onCommunityClick,
+                onCloseClick = onDismissSheet
             )
         }
     }
