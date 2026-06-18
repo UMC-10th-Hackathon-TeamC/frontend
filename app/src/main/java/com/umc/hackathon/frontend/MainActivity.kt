@@ -27,8 +27,10 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         authTokenStore = AuthTokenStore(applicationContext)
-        handleOAuthCallback(intent)
-        loadStartDestination()
+        val isOAuthCallback = handleOAuthCallback(intent)
+        if (!isOAuthCallback) {
+            loadStartDestination()
+        }
 
         setContent {
             UMCHackathonFrontendTheme {
@@ -51,14 +53,14 @@ class MainActivity : ComponentActivity() {
         handleOAuthCallback(intent)
     }
 
-    private fun handleOAuthCallback(intent: Intent?) {
-        val uri = intent?.data ?: return
-        if (!uri.isOAuthCallback()) return
+    private fun handleOAuthCallback(intent: Intent?): Boolean {
+        val uri = intent?.data ?: return false
+        if (!uri.isOAuthCallback()) return false
 
         val accessToken = uri.getQueryParameter("accessToken").orEmpty()
         val refreshToken = uri.getQueryParameter("refreshToken").orEmpty()
         val userId = uri.getQueryParameter("userId").orEmpty()
-        if (accessToken.isBlank() || refreshToken.isBlank()) return
+        if (accessToken.isBlank() || refreshToken.isBlank()) return false
 
         lifecycleScope.launch {
             authTokenStore.saveTokens(
@@ -69,6 +71,7 @@ class MainActivity : ComponentActivity() {
             startDestination.value = AppRoute.Home.path
             oauthCallbackVersion.intValue += 1
         }
+        return true
     }
 
     private fun loadStartDestination() {
