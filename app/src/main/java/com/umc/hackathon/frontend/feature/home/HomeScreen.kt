@@ -24,7 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.umc.hackathon.frontend.feature.community.CommunitySheet
 import com.umc.hackathon.frontend.feature.district.DistrictInfoSheet
-import com.umc.hackathon.frontend.feature.ranking.RankingSheet
+import com.umc.hackathon.frontend.feature.ranking.RankingBottomSheet
 
 @Composable
 fun HomeRoute(
@@ -57,7 +57,14 @@ private fun HomeScreen(
     onMyPageClick: () -> Unit,
     onDismissSheet: () -> Unit
 ) {
+    // 구 상세/커뮤니티/로그인 시트가 열리지 않았을 때만 랭킹 시트를 보여준다.
+    val shouldShowRankingSheet =
+        !uiState.isDistrictSheetVisible &&
+                !uiState.isCommunitySheetVisible &&
+                !uiState.isLoginPromptVisible
+
     Box(modifier = Modifier.fillMaxSize()) {
+        // 전체 화면 네이버 지도.
         HomeMap(
             districts = uiState.districtIndexes,
             selectedDistrict = uiState.selectedDistrict,
@@ -65,6 +72,7 @@ private fun HomeScreen(
             modifier = Modifier.fillMaxSize()
         )
 
+        // 우측 상단 마이페이지 버튼.
         Box(
             modifier = Modifier
                 .align(Alignment.TopEnd)
@@ -82,14 +90,17 @@ private fun HomeScreen(
                 fontWeight = FontWeight.Bold
             )
         }
-    }
 
-    if (uiState.isRankingSheetVisible) {
-        ModalBottomSheet(onDismissRequest = onDismissSheet) {
-            RankingSheet(districtIndexes = uiState.districtIndexes)
+        // 홈 기본 상태에서 항상 보이는 랭킹 바텀시트.
+        if (shouldShowRankingSheet) {
+            RankingBottomSheet(
+                districtIndexes = uiState.districtIndexes,
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
         }
     }
 
+    // 지도 마커 클릭 시 열리는 구 상세 바텀시트.
     if (uiState.isDistrictSheetVisible) {
         ModalBottomSheet(
             onDismissRequest = onDismissSheet,
@@ -106,6 +117,7 @@ private fun HomeScreen(
         }
     }
 
+    // 구 상세에서 커뮤니티 보기 클릭 시 열리는 커뮤니티 바텀시트.
     if (uiState.isCommunitySheetVisible) {
         ModalBottomSheet(onDismissRequest = onDismissSheet) {
             CommunitySheet(
@@ -116,6 +128,7 @@ private fun HomeScreen(
         }
     }
 
+    // 비로그인 사용자가 글쓰기 시도 시 열리는 로그인 유도 바텀시트.
     if (uiState.isLoginPromptVisible) {
         ModalBottomSheet(onDismissRequest = onDismissSheet) {
             LoginPromptSheet(onDismiss = onDismissSheet)
