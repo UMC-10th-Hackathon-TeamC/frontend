@@ -8,7 +8,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.naver.maps.map.MapView
 
@@ -47,8 +46,6 @@ fun HomeMap(
 
     AndroidView(
         modifier = modifier,
-        factory = { context ->
-            MapView(context)
-        }
+        factory = { mapView }
     )
 }
