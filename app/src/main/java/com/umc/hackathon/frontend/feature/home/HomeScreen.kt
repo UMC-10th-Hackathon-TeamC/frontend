@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.umc.hackathon.frontend.core.model.MosquitoLevel
 import com.umc.hackathon.frontend.feature.community.CommunitySheet
 import com.umc.hackathon.frontend.feature.district.DistrictInfoSheet
 import com.umc.hackathon.frontend.feature.ranking.RankingBottomSheet
@@ -126,18 +127,24 @@ private fun HomeScreen(
 
     // 구 상세에서 커뮤니티 보기 클릭 시 열리는 커뮤니티 바텀시트.
     if (uiState.isCommunitySheetVisible && !uiState.isLoginPromptVisible) {
+        val selectedDistrict = uiState.districtIndexes.firstOrNull {
+            it.districtName == uiState.selectedDistrict
+        }
+
         ModalBottomSheet(
             onDismissRequest = onDismissSheet,
             containerColor = MaterialTheme.colorScheme.surface,
             sheetState = communitySheetState
         ) {
             CommunitySheet(
-                districtName = uiState.selectedDistrict ?: "강남구",
+                districtName = selectedDistrict?.districtName ?: uiState.selectedDistrict ?: "강남구",
+                mosquitoIndex = selectedDistrict?.mosquitoIndex ?: 72,
+                level = selectedDistrict?.level ?: MosquitoLevel.HIGH,
                 posts = uiState.recentPosts,
                 onWriteClick = onWriteClick,
                 onCloseClick = onDismissSheet,
                 onCollapseClick = {
-                    onDistrictClick(uiState.selectedDistrict ?: "강남구")
+                    onDistrictClick(selectedDistrict?.districtName ?: uiState.selectedDistrict ?: "강남구")
                 }
             )
         }
