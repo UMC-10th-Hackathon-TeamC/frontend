@@ -17,3 +17,13 @@ fun Int.toMosquitoLevel(): MosquitoLevel {
         else -> MosquitoLevel.VERY_HIGH
     }
 }
+
+fun String.toMosquitoLevel(): MosquitoLevel {
+    return when (replace(" ", "")) {
+        "낮음" -> MosquitoLevel.LOW
+        "보통" -> MosquitoLevel.NORMAL
+        "높음" -> MosquitoLevel.HIGH
+        "매우높음" -> MosquitoLevel.VERY_HIGH
+        else -> MosquitoLevel.NORMAL
+    }
+}

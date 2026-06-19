@@ -11,6 +11,11 @@ val localProperties = Properties().apply {
         localPropertiesFile.inputStream().use { load(it) }
     }
 }
+val apiBaseUrl = localProperties.getProperty(
+    "API_BASE_URL",
+    "http://10.0.2.2:3000/api/v1/"
+)
+val useMockApi = localProperties.getProperty("USE_MOCK_API", "true").toBoolean()
 
 android {
     namespace = "com.umc.hackathon.frontend"
@@ -30,6 +35,8 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         manifestPlaceholders["NAVER_MAP_CLIENT_ID"] =
             localProperties.getProperty("NAVER_MAP_CLIENT_ID", "")
+        buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
+        buildConfigField("Boolean", "USE_MOCK_API", useMockApi.toString())
     }
 
     buildTypes {
@@ -49,6 +56,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -59,6 +67,9 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.naver.map.sdk)
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.converter.gson)
+    implementation(libs.okhttp.logging.interceptor)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)

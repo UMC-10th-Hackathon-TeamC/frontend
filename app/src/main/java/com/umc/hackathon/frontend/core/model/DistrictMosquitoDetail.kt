@@ -1,10 +1,12 @@
 package com.umc.hackathon.frontend.core.model
 
-data class DistrictMosquitoIndex(
+data class DistrictMosquitoDetail(
+    val id: Int,
     val districtName: String,
     val mosquitoIndex: Int,
     val latitude: Double,
     val longitude: Double,
-    val id: Int = 0,
-    val level: MosquitoLevel = mosquitoIndex.toMosquitoLevel()
+    val level: MosquitoLevel,
+    val description: String,
+    val updatedAt: String
 )
