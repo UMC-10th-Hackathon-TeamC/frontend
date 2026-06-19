@@ -2,6 +2,7 @@ package com.umc.hackathon.frontend.core.network
 
 import com.umc.hackathon.frontend.BuildConfig
 import com.umc.hackathon.frontend.feature.home.data.api.HomeApi
+import com.umc.hackathon.frontend.feature.mypage.data.api.MyPageApi
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -27,4 +28,5 @@ object NetworkModule {
         .build()
 
     val homeApi: HomeApi = retrofit.create(HomeApi::class.java)
+    val myPageApi: MyPageApi = retrofit.create(MyPageApi::class.java)
 }
