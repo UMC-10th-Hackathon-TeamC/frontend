@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -34,6 +35,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.umc.hackathon.frontend.core.model.MosquitoLevel
 import com.umc.hackathon.frontend.feature.community.model.CommunityPost
 
 private const val ALL_CATEGORY = "전체"
@@ -41,6 +44,8 @@ private const val ALL_CATEGORY = "전체"
 @Composable
 fun CommunitySheet(
     districtName: String,
+    mosquitoIndex: Int,
+    level: MosquitoLevel,
     posts: List<CommunityPost>,
     onWriteClick: () -> Unit,
     onCloseClick: () -> Unit,
@@ -59,27 +64,26 @@ fun CommunitySheet(
         modifier = Modifier
             .fillMaxWidth()
             .fillMaxHeight(0.8f)
+            .background(MaterialTheme.colorScheme.surface)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
-            CollapseHandle(onCollapseClick = onCollapseClick)
-            CommunityHeader(districtName = districtName, onCloseClick = onCloseClick)
-        }
+        CollapseHandle(onCollapseClick = onCollapseClick)
+
+        CommunityHeader(
+            districtName = districtName,
+            mosquitoIndex = mosquitoIndex,
+            level = level,
+            onCloseClick = onCloseClick
+        )
 
         HorizontalDivider(
-            modifier = Modifier.padding(top = 14.dp),
-            color = Color(0xFFE6EAE3)
+            color = Color(0xFFE2E7DF)
         )
 
         Column(
             modifier = Modifier
                 .weight(1f)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 12.dp),
+                .padding(horizontal = 36.dp, vertical = 24.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             CategoryTabs(
@@ -114,26 +118,18 @@ fun CommunitySheet(
 private fun CollapseHandle(
     onCollapseClick: () -> Unit
 ) {
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .clickable(onClick = onCollapseClick)
-            .padding(top = 2.dp),
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically
+            .padding(top = 1.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Icon(
-            imageVector = ChevronDownIcon,
-            contentDescription = null,
-            modifier = Modifier.size(16.dp),
-            tint = Color(0xFF2E6A44)
-        )
         Text(
-            text = "접기",
-            style = MaterialTheme.typography.labelLarge,
-            color = Color(0xFF2E6A44),
-            fontWeight = FontWeight.SemiBold
+            modifier = Modifier.clickable { onCollapseClick() },
+            text = "▽ 접기",
+            color = Color(0xFF2F7047),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
         )
     }
 }
@@ -141,62 +137,74 @@ private fun CollapseHandle(
 @Composable
 private fun CommunityHeader(
     districtName: String,
+    mosquitoIndex: Int,
+    level: MosquitoLevel,
     onCloseClick: () -> Unit
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 36.dp, top = 28.dp, end = 36.dp, bottom = 28.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column {
             Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = districtName,
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.Bold
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF151A15)
                 )
-                LevelBadge(text = "높음")
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                LevelChip(level = level)
             }
 
+            Spacer(modifier = Modifier.height(14.dp))
+
             Row(
-                horizontalArrangement = Arrangement.spacedBy(7.dp),
                 verticalAlignment = Alignment.Bottom
             ) {
                 Text(
-                    text = "모기 지수",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = "모기 지수 ",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color(0xFF747C72)
                 )
                 Text(
-                    text = "72",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = Color(0xFFD12A24),
-                    fontWeight = FontWeight.Bold
+                    text = mosquitoIndex.toString(),
+                    fontSize = 30.sp,
+                    lineHeight = 30.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = levelTextColor(level)
                 )
                 Text(
+                    modifier = Modifier.padding(start = 4.dp, bottom = 2.dp),
                     text = "/ 100",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color(0xFF747C72)
                 )
             }
         }
 
         Box(
             modifier = Modifier
-                .size(36.dp)
-                .clip(CircleShape)
-                .background(Color(0xFFEAF0E8))
-                .clickable(onClick = onCloseClick),
+                .size(42.dp)
+                .background(
+                    color = Color(0xFFEFF2EC),
+                    shape = CircleShape
+                )
+                .clickable { onCloseClick() },
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "x",
-                style = MaterialTheme.typography.titleMedium,
-                color = Color(0xFF4E5A50)
+                text = "×",
+                color = Color(0xFF4D554D),
+                fontSize = 34.sp,
+                lineHeight = 34.sp
             )
         }
     }
@@ -217,15 +225,17 @@ private fun CategoryTabs(
             val selected = category == selectedCategory
             Box(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(18.dp))
-                    .background(if (selected) Color(0xFF2F794C) else Color(0xFFE9EEE7))
+                    .background(
+                        color = if (selected) Color(0xFF2F7047) else Color(0xFFEAEDE8),
+                        shape = RoundedCornerShape(100)
+                    )
                     .clickable { onCategoryClick(category) }
-                    .padding(horizontal = 13.dp, vertical = 7.dp)
+                    .padding(horizontal = 12.dp, vertical = 6.dp)
             ) {
                 Text(
                     text = category,
                     style = MaterialTheme.typography.labelLarge,
-                    color = if (selected) Color.White else Color(0xFF465349),
+                    color = if (selected) Color.White else Color(0xFF4D564D),
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -302,7 +312,7 @@ private fun WriteButton(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 8.dp)
+            .padding(horizontal = 36.dp, vertical = 8.dp)
             .clip(RoundedCornerShape(14.dp))
             .background(Color(0xFF2F794C))
             .clickable(onClick = onWriteClick)
@@ -330,21 +340,22 @@ private fun WriteButton(
 }
 
 @Composable
-private fun LevelBadge(
-    text: String
+private fun LevelChip(
+    level: MosquitoLevel
 ) {
     Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(10.dp))
-            .background(Color(0xFFFFDAD8))
-            .padding(horizontal = 8.dp, vertical = 4.dp)
+            .background(
+                color = levelChipBackgroundColor(level),
+                shape = RoundedCornerShape(100)
+            )
+            .padding(horizontal = 12.dp, vertical = 6.dp)
     ) {
         Text(
-            text = text,
-            style = MaterialTheme.typography.labelSmall,
-            color = Color(0xFFD12A24),
-            fontWeight = FontWeight.Bold,
-            maxLines = 1
+            text = level.label,
+            color = levelTextColor(level),
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.Bold
         )
     }
 }
@@ -403,23 +414,23 @@ private fun ReactionText(
     }
 }
 
-private val ChevronDownIcon: ImageVector = ImageVector.Builder(
-    name = "ChevronDown",
-    defaultWidth = 24.dp,
-    defaultHeight = 24.dp,
-    viewportWidth = 24f,
-    viewportHeight = 24f
-).apply {
-    path(fill = SolidColor(Color.Black)) {
-        moveTo(7.41f, 8.59f)
-        lineTo(12f, 13.17f)
-        lineTo(16.59f, 8.59f)
-        lineTo(18f, 10f)
-        lineTo(12f, 16f)
-        lineTo(6f, 10f)
-        close()
+private fun levelChipBackgroundColor(level: MosquitoLevel): Color {
+    return when (level) {
+        MosquitoLevel.LOW -> Color(0xFFDDEEDF)
+        MosquitoLevel.NORMAL -> Color(0xFFFFE9A8)
+        MosquitoLevel.HIGH -> Color(0xFFFFD9BF)
+        MosquitoLevel.VERY_HIGH -> Color(0xFFFFD4D1)
     }
-}.build()
+}
+
+private fun levelTextColor(level: MosquitoLevel): Color {
+    return when (level) {
+        MosquitoLevel.LOW -> Color(0xFF2F7047)
+        MosquitoLevel.NORMAL -> Color(0xFFD09A00)
+        MosquitoLevel.HIGH -> Color(0xFFC25A20)
+        MosquitoLevel.VERY_HIGH -> Color(0xFFD02020)
+    }
+}
 
 private val EditIcon: ImageVector = ImageVector.Builder(
     name = "Edit",

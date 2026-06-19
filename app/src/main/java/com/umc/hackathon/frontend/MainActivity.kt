@@ -12,6 +12,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.lifecycleScope
 import com.umc.hackathon.frontend.core.data.AuthTokenStore
+import com.umc.hackathon.frontend.core.network.NetworkModule
 import com.umc.hackathon.frontend.core.navigation.AppRoute
 import com.umc.hackathon.frontend.core.navigation.MogiMapNavHost
 import com.umc.hackathon.frontend.ui.theme.UMCHackathonFrontendTheme
@@ -26,6 +27,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         authTokenStore = AuthTokenStore(applicationContext)
+        NetworkModule.initialize(applicationContext)
         val isOAuthCallback = handleOAuthCallback(intent)
         if (!isOAuthCallback) {
             loadStartDestination()
@@ -78,13 +80,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun loadStartDestination() {
-        lifecycleScope.launch {
-            startDestination.value = if (authTokenStore.hasAccessToken()) {
-                AppRoute.Home.path
-            } else {
-                AppRoute.Onboarding.path
-            }
-        }
+        startDestination.value = AppRoute.Onboarding.path
     }
 
     private fun Uri.isOAuthCallback(): Boolean {

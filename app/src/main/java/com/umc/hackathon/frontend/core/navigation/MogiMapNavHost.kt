@@ -44,11 +44,12 @@ fun MogiMapNavHost(
     ) {
         composable(AppRoute.Onboarding.path) {
             OnboardingRoute(
-                onEnterHome = {
+                onFinished = {
                     navController.navigate(AppRoute.Home.path) {
                         popUpTo(AppRoute.Onboarding.path) {
                             inclusive = true
                         }
+                        launchSingleTop = true
                     }
                 }
             )
@@ -65,8 +66,19 @@ fun MogiMapNavHost(
             )
         }
 
+        //로그아웃하면 게스트 지도 홈 화면으로 이동
         composable(AppRoute.MyPage.path) {
-            MyPageRoute(onBackClick = navController::popBackStack)
+            MyPageRoute(
+                onBackClick = navController::popBackStack,
+                onLoggedOut = {
+                    navController.navigate(AppRoute.Home.path) {
+                        popUpTo(AppRoute.Home.path) {
+                            inclusive = true
+                        }
+                        launchSingleTop = true
+                    }
+                }
+            )
         }
 
         composable(

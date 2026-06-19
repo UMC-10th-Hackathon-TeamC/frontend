@@ -42,6 +42,14 @@ class AuthTokenStore(
         return tokens.first().accessToken.isNotBlank()
     }
 
+    suspend fun clearTokens() {
+        context.authDataStore.edit { preferences ->
+            preferences.remove(ACCESS_TOKEN)
+            preferences.remove(REFRESH_TOKEN)
+            preferences.remove(USER_ID)
+        }
+    }
+
     private companion object {
         val ACCESS_TOKEN = stringPreferencesKey("accessToken")
         val REFRESH_TOKEN = stringPreferencesKey("refreshToken")
