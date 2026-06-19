@@ -9,8 +9,8 @@ import com.umc.hackathon.frontend.core.model.DistrictMosquitoIndex
 import com.umc.hackathon.frontend.feature.community.data.repository.CommunityRepository
 import com.umc.hackathon.frontend.feature.community.data.repository.FakeCommunityRepository
 import com.umc.hackathon.frontend.feature.community.model.CommunityPost
-import com.umc.hackathon.frontend.feature.home.data.repository.FakeHomeRepository
 import com.umc.hackathon.frontend.feature.home.data.repository.HomeRepository
+import com.umc.hackathon.frontend.feature.home.data.repository.HomeRepositoryProvider
 import kotlinx.coroutines.launch
 
 data class HomeUiState(
@@ -25,7 +25,7 @@ data class HomeUiState(
 )
 
 class HomeViewModel(
-    private val homeRepository: HomeRepository = FakeHomeRepository(),
+    private val homeRepository: HomeRepository = HomeRepositoryProvider.create(),
     private val communityRepository: CommunityRepository = FakeCommunityRepository()
 ) : ViewModel() {
     var uiState by mutableStateOf(HomeUiState())
@@ -37,9 +37,11 @@ class HomeViewModel(
 
     private fun loadHomeData() {
         viewModelScope.launch {
-            uiState = uiState.copy(
-                districtIndexes = homeRepository.getTodayDistrictIndexes()
-            )
+            runCatching {
+                homeRepository.getTodayDistrictIndexes()
+            }.onSuccess { districtIndexes ->
+                uiState = uiState.copy(districtIndexes = districtIndexes)
+            }
         }
     }
 
