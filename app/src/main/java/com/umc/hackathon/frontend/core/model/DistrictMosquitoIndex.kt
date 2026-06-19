@@ -5,5 +5,6 @@ data class DistrictMosquitoIndex(
     val mosquitoIndex: Int,
     val latitude: Double,
     val longitude: Double,
+    val id: Int = 0,
     val level: MosquitoLevel = mosquitoIndex.toMosquitoLevel()
 )
