@@ -1,6 +1,7 @@
 package com.umc.hackathon.frontend.feature.community
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -18,16 +19,25 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -60,10 +70,19 @@ fun CommunitySheet(
     mosquitoIndex: Int,
     level: MosquitoLevel,
     posts: List<CommunityPost>,
+    onLikeClick: (CommunityPost) -> Unit,
+    onEditClick: (CommunityPost) -> Unit,
+    onDeleteClick: (CommunityPost) -> Unit,
     onWriteClick: () -> Unit,
     onCloseClick: () -> Unit,
     onCollapseClick: () -> Unit
 ) {
+    var sortType by remember { mutableStateOf(CommunitySortType.LATEST) }
+    val sortedPosts = when (sortType) {
+        CommunitySortType.LATEST -> posts
+        CommunitySortType.POPULAR -> posts.sortedByDescending { it.likeCount }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -84,14 +103,23 @@ fun CommunitySheet(
                 onCloseClick = onCloseClick
             )
 
-            CommunityTitleBar(districtName = districtName)
+            CommunityTitleBar(
+                districtName = districtName,
+                selectedSortType = sortType,
+                onSortTypeChange = { sortType = it }
+            )
 
-            if (posts.isEmpty()) {
+            if (sortedPosts.isEmpty()) {
                 EmptyPostMessage()
             } else {
-                posts.forEachIndexed { index, post ->
-                    CommunityPostItem(post = post)
-                    if (index != posts.lastIndex) {
+                sortedPosts.forEachIndexed { index, post ->
+                    CommunityPostItem(
+                        post = post,
+                        onLikeClick = onLikeClick,
+                        onEditClick = onEditClick,
+                        onDeleteClick = onDeleteClick
+                    )
+                    if (index != sortedPosts.lastIndex) {
                         HorizontalDivider(color = mogiDivider)
                     }
                 }
@@ -261,7 +289,9 @@ private fun MosquitoIndexProgress(
 
 @Composable
 private fun CommunityTitleBar(
-    districtName: String
+    districtName: String,
+    selectedSortType: CommunitySortType,
+    onSortTypeChange: (CommunitySortType) -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -277,21 +307,31 @@ private fun CommunityTitleBar(
             fontWeight = FontWeight.Bold
         )
 
-        SortChip(text = "최신순", selected = true)
+        SortChip(
+            text = "최신순",
+            selected = selectedSortType == CommunitySortType.LATEST,
+            onClick = { onSortTypeChange(CommunitySortType.LATEST) }
+        )
         Spacer(modifier = Modifier.width(6.dp))
-        SortChip(text = "인기순", selected = false)
+        SortChip(
+            text = "인기순",
+            selected = selectedSortType == CommunitySortType.POPULAR,
+            onClick = { onSortTypeChange(CommunitySortType.POPULAR) }
+        )
     }
 }
 
 @Composable
 private fun SortChip(
     text: String,
-    selected: Boolean
+    selected: Boolean,
+    onClick: () -> Unit
 ) {
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(100))
             .background(if (selected) mogiPrimaryGreen else mogiSortUnselectedBackground)
+            .clickable { onClick() }
             .padding(horizontal = 13.dp, vertical = 7.dp)
     ) {
         Text(
@@ -301,6 +341,11 @@ private fun SortChip(
             fontWeight = FontWeight.Bold
         )
     }
+}
+
+private enum class CommunitySortType {
+    LATEST,
+    POPULAR
 }
 
 @Composable
@@ -315,8 +360,14 @@ private fun EmptyPostMessage() {
 
 @Composable
 private fun CommunityPostItem(
-    post: CommunityPost
+    post: CommunityPost,
+    onLikeClick: (CommunityPost) -> Unit,
+    onEditClick: (CommunityPost) -> Unit,
+    onDeleteClick: (CommunityPost) -> Unit
 ) {
+    var isMenuExpanded by remember { mutableStateOf(false) }
+    var isDeleteDialogVisible by remember { mutableStateOf(false) }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -342,12 +393,51 @@ private fun CommunityPostItem(
         Spacer(modifier = Modifier.width(14.dp))
 
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = post.authorName,
-                style = MaterialTheme.typography.titleMedium,
-                color = mogiTextPrimary,
-                fontWeight = FontWeight.Bold
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    modifier = Modifier.weight(1f),
+                    text = post.authorName,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = mogiTextPrimary,
+                    fontWeight = FontWeight.Bold
+                )
+
+                if (post.isMine) {
+                    Box {
+                        Text(
+                            modifier = Modifier
+                                .clip(CircleShape)
+                                .clickable { isMenuExpanded = true }
+                                .padding(horizontal = 8.dp, vertical = 2.dp),
+                            text = "⋯",
+                            color = mogiTextSecondary,
+                            fontSize = 22.sp,
+                            lineHeight = 22.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        DropdownMenu(
+                            expanded = isMenuExpanded,
+                            onDismissRequest = { isMenuExpanded = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text(text = "수정") },
+                                onClick = {
+                                    isMenuExpanded = false
+                                    onEditClick(post)
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(text = "삭제") },
+                                onClick = {
+                                    isMenuExpanded = false
+                                    isDeleteDialogVisible = true
+                                }
+                            )
+                        }
+                    }
+                }
+            }
 
             Text(
                 text = post.createdAtText,
@@ -366,12 +456,55 @@ private fun CommunityPostItem(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            Text(
-                text = "♡  ${post.likeCount}",
-                style = MaterialTheme.typography.bodyLarge,
-                color = mogiTextSecondary
-            )
+            Row(
+                modifier = Modifier.clickable { onLikeClick(post) },
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = if (post.isLiked) "♥" else "♡",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = if (post.isLiked) mogiPrimaryGreen else mogiTextSecondary,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(modifier = Modifier.width(6.dp))
+
+                Text(
+                    text = post.likeCount.toString(),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = if (post.isLiked) mogiPrimaryGreen else mogiTextSecondary
+                )
+            }
         }
+    }
+
+    if (isDeleteDialogVisible) {
+        AlertDialog(
+            onDismissRequest = { isDeleteDialogVisible = false },
+            title = {
+                Text(text = "게시글 삭제")
+            },
+            text = {
+                Text(text = "정말 삭제하시겠습니까?")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        isDeleteDialogVisible = false
+                        onDeleteClick(post)
+                    }
+                ) {
+                    Text(text = "삭제")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { isDeleteDialogVisible = false }
+                ) {
+                    Text(text = "취소")
+                }
+            }
+        )
     }
 }
 
@@ -380,23 +513,28 @@ private fun AdCard() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 32.dp, vertical = 12.dp)
+            .padding(horizontal = 32.dp, vertical = 10.dp)
+            .border(
+                width = 1.dp,
+                color = Color(0xFFC9D8CF),
+                shape = RoundedCornerShape(16.dp)
+            )
             .clip(RoundedCornerShape(16.dp))
             .background(mogiAdBackground)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             modifier = Modifier
-                .size(42.dp)
+                .size(46.dp)
                 .clip(CircleShape)
                 .background(mogiAdIconBackground),
             contentAlignment = Alignment.Center
         ) {
-            Text(text = "🏠", fontSize = 22.sp)
+            Text(text = "🏠", fontSize = 23.sp)
         }
 
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width(14.dp))
 
         Column(modifier = Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -420,24 +558,30 @@ private fun AdCard() {
                     text = "클린방역서비스",
                     color = mogiTextPrimary,
                     style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(3.dp))
 
             Text(
                 text = "서울 전 지역 당일 방문 · 친환경 방역",
                 color = mogiTextSecondary,
-                style = MaterialTheme.typography.bodySmall
+                style = MaterialTheme.typography.bodySmall,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
+
+        Spacer(modifier = Modifier.width(12.dp))
 
         Box(
             modifier = Modifier
                 .clip(RoundedCornerShape(100))
                 .background(mogiPrimaryGreen)
-                .padding(horizontal = 14.dp, vertical = 8.dp)
+                .padding(horizontal = 14.dp, vertical = 9.dp)
         ) {
             Text(
                 text = "무료 견적 받기",
@@ -564,6 +708,9 @@ private fun CommunitySheetPreview() {
                     commentCount = 8
                 )
             ),
+            onLikeClick = {},
+            onEditClick = {},
+            onDeleteClick = {},
             onWriteClick = {},
             onCloseClick = {},
             onCollapseClick = {}

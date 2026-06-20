@@ -27,8 +27,14 @@ data class HomeUiState(
     val isRankingSheetVisible: Boolean = false,
     val isDistrictSheetVisible: Boolean = false,
     val isCommunitySheetVisible: Boolean = false,
-    val isLoginPromptVisible: Boolean = false
+    val isLoginPromptVisible: Boolean = false,
+    val loginPromptPurpose: LoginPromptPurpose = LoginPromptPurpose.WRITE
 )
+
+enum class LoginPromptPurpose {
+    WRITE,
+    LIKE
+}
 
 class HomeViewModel(
     private val homeRepository: HomeRepository = HomeRepositoryProvider.create(),
@@ -109,9 +115,69 @@ class HomeViewModel(
             isRankingSheetVisible = false,
             isDistrictSheetVisible = false,
             isCommunitySheetVisible = true,
-            isLoginPromptVisible = true
+            isLoginPromptVisible = true,
+            loginPromptPurpose = LoginPromptPurpose.WRITE
         )
         return false
+    }
+
+    fun togglePostLike(post: CommunityPost) {
+        if (!uiState.isLoggedIn) {
+            uiState = uiState.copy(
+                isRankingSheetVisible = false,
+                isDistrictSheetVisible = false,
+                isCommunitySheetVisible = true,
+                isLoginPromptVisible = true,
+                loginPromptPurpose = LoginPromptPurpose.LIKE
+            )
+            return
+        }
+
+        val nextLiked = !post.isLiked
+        updatePostLikeState(
+            postId = post.id,
+            isLiked = nextLiked,
+            likeCount = if (nextLiked) post.likeCount + 1 else (post.likeCount - 1).coerceAtLeast(0)
+        )
+
+        viewModelScope.launch {
+            runCatching {
+                if (nextLiked) {
+                    communityRepository.likePost(post.id)
+                } else {
+                    communityRepository.unlikePost(post.id)
+                }
+            }.onSuccess { likeCount ->
+                updatePostLikeState(
+                    postId = post.id,
+                    isLiked = nextLiked,
+                    likeCount = likeCount
+                )
+            }.onFailure {
+                updatePostLikeState(
+                    postId = post.id,
+                    isLiked = post.isLiked,
+                    likeCount = post.likeCount
+                )
+            }
+        }
+    }
+
+    fun deletePost(post: CommunityPost) {
+        if (!post.isMine) return
+
+        val previousPosts = uiState.recentPosts
+        uiState = uiState.copy(
+            recentPosts = uiState.recentPosts.filterNot { it.id == post.id }
+        )
+
+        viewModelScope.launch {
+            runCatching {
+                communityRepository.deletePost(post.id)
+            }.onFailure {
+                uiState = uiState.copy(recentPosts = previousPosts)
+            }
+        }
     }
 
     fun dismissSheets() {
@@ -168,5 +234,24 @@ class HomeViewModel(
                 districtName = selectedDistrict.districtName
             )
         }
+    }
+
+    private fun updatePostLikeState(
+        postId: Long,
+        isLiked: Boolean,
+        likeCount: Int
+    ) {
+        uiState = uiState.copy(
+            recentPosts = uiState.recentPosts.map { post ->
+                if (post.id == postId) {
+                    post.copy(
+                        isLiked = isLiked,
+                        likeCount = likeCount
+                    )
+                } else {
+                    post
+                }
+            }
+        )
     }
 }

@@ -43,11 +43,15 @@ import com.umc.hackathon.frontend.ui.theme.surfaceContainerHighestDark
 fun WritePostRoute(
     districtId: Int,
     districtName: String,
+    postId: Long? = null,
     onBackClick: () -> Unit,
     viewModel: WritePostViewModel = viewModel()
 ) {
-    LaunchedEffect(Unit) {
+    LaunchedEffect(postId) {
         viewModel.loadAuthorProfile()
+        postId?.let {
+            viewModel.loadPostForEdit(it)
+        }
     }
 
     val uiState = viewModel.uiState
@@ -55,15 +59,21 @@ fun WritePostRoute(
     WritePostScreen(
         districtName = districtName,
         uiState = uiState,
-        onTitleChange = viewModel::updateTitle,
         onContentChange = viewModel::updateContent,
         onBackClick = onBackClick,
         onSubmitClick = {
-            viewModel.createPost(
-                districtId = districtId,
-                districtName = districtName,
-                onSuccess = onBackClick
-            )
+            if (postId == null) {
+                viewModel.createPost(
+                    districtId = districtId,
+                    districtName = districtName,
+                    onSuccess = onBackClick
+                )
+            } else {
+                viewModel.updatePost(
+                    postId = postId,
+                    onSuccess = onBackClick
+                )
+            }
         }
     )
 }
@@ -72,7 +82,6 @@ fun WritePostRoute(
 private fun WritePostScreen(
     districtName: String,
     uiState: WritePostUiState,
-    onTitleChange: (String) -> Unit,
     onContentChange: (String) -> Unit,
     onBackClick: () -> Unit,
     onSubmitClick: () -> Unit
@@ -84,9 +93,9 @@ private fun WritePostScreen(
             .padding(top = 48.dp)
     ) {
         WritePostTopBar(
-            canSubmit = uiState.title.isNotBlank() &&
-                uiState.content.isNotBlank() &&
+            canSubmit = uiState.content.isNotBlank() &&
                 !uiState.isSubmitting,
+            submitText = if (uiState.isEditing) "수정" else "남기기",
             onBackClick = onBackClick,
             onSubmitClick = onSubmitClick
         )
@@ -102,13 +111,6 @@ private fun WritePostScreen(
             modifier = Modifier.padding(top = 12.dp),
             color = Color.White.copy(alpha = 0.08f)
         )
-
-        TitleInput(
-            title = uiState.title,
-            onTitleChange = onTitleChange
-        )
-
-        HorizontalDivider(color = Color.White.copy(alpha = 0.08f))
 
         ContentInput(
             content = uiState.content,
@@ -134,6 +136,7 @@ private fun WritePostScreen(
 @Composable
 private fun WritePostTopBar(
     canSubmit: Boolean,
+    submitText: String,
     onBackClick: () -> Unit,
     onSubmitClick: () -> Unit
 ) {
@@ -163,7 +166,7 @@ private fun WritePostTopBar(
                 .padding(horizontal = 18.dp, vertical = 10.dp)
         ) {
             Text(
-                text = "남기기",
+                text = submitText,
                 color = Color.White.copy(alpha = if (canSubmit) 1f else 0.72f),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold
@@ -218,39 +221,6 @@ private fun AuthorArea(
             )
         }
     }
-}
-
-@Composable
-private fun TitleInput(
-    title: String,
-    onTitleChange: (String) -> Unit
-) {
-    BasicTextField(
-        value = title,
-        onValueChange = onTitleChange,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 22.dp, vertical = 16.dp),
-        singleLine = true,
-        textStyle = TextStyle(
-            color = Color.White,
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold
-        ),
-        decorationBox = { innerTextField ->
-            Box {
-                if (title.isBlank()) {
-                    Text(
-                        text = "제목을 입력해주세요",
-                        color = mogiTextSecondary.copy(alpha = 0.5f),
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-                innerTextField()
-            }
-        }
-    )
 }
 
 @Composable

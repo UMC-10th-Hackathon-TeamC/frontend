@@ -47,9 +47,9 @@ import coil.compose.AsyncImage
 import com.umc.hackathon.frontend.PendingWritePostNavigation
 import com.umc.hackathon.frontend.core.data.AuthTokenStore
 import com.umc.hackathon.frontend.core.model.DistrictMosquitoIndex
-
 import com.umc.hackathon.frontend.core.model.MosquitoLevel
 import com.umc.hackathon.frontend.feature.community.CommunitySheet
+import com.umc.hackathon.frontend.feature.community.model.CommunityPost
 import com.umc.hackathon.frontend.feature.district.DistrictInfoSheet
 import com.umc.hackathon.frontend.feature.onboarding.data.repository.AuthRepositoryProvider
 import com.umc.hackathon.frontend.feature.ranking.RankingBottomSheet
@@ -59,6 +59,7 @@ import kotlinx.coroutines.launch
 fun HomeRoute(
     onNavigateToMyPage: () -> Unit,
     onNavigateToWrite: (Int, String) -> Unit,
+    onNavigateToEdit: (Long, Int, String) -> Unit,
     viewModel: HomeViewModel = viewModel()
 ) {
     val context = LocalContext.current
@@ -96,6 +97,16 @@ fun HomeRoute(
         uiState = viewModel.uiState,
         onDistrictClick = viewModel::showDistrictSheet,
         onCommunityClick = viewModel::showCommunitySheet,
+        onLikeClick = viewModel::togglePostLike,
+        onEditClick = { post ->
+            val selectedDistrict = viewModel.uiState.selectedDistrictIndex()
+            onNavigateToEdit(
+                post.id,
+                selectedDistrict.id,
+                selectedDistrict.districtName
+            )
+        },
+        onDeleteClick = viewModel::deletePost,
         onWriteClick = {
             val selectedDistrict = viewModel.uiState.selectedDistrictIndex()
             if (viewModel.requestWrite()) {
@@ -109,9 +120,11 @@ fun HomeRoute(
         onDismissSheet = viewModel::dismissSheets,
         onDismissLoginPrompt = viewModel::dismissLoginPrompt,
         onGoogleClick = {
-            val selectedDistrict = viewModel.uiState.selectedDistrictIndex()
-            PendingWritePostNavigation.districtId = selectedDistrict.id
-            PendingWritePostNavigation.districtName = selectedDistrict.districtName
+            if (viewModel.uiState.loginPromptPurpose == LoginPromptPurpose.WRITE) {
+                val selectedDistrict = viewModel.uiState.selectedDistrictIndex()
+                PendingWritePostNavigation.districtId = selectedDistrict.id
+                PendingWritePostNavigation.districtName = selectedDistrict.districtName
+            }
             val loginIntent = Intent(
                 Intent.ACTION_VIEW,
                 Uri.parse(authRepository.getGoogleLoginUrl())
@@ -127,6 +140,9 @@ private fun HomeScreen(
     uiState: HomeUiState,
     onDistrictClick: (String) -> Unit,
     onCommunityClick: () -> Unit,
+    onLikeClick: (CommunityPost) -> Unit,
+    onEditClick: (CommunityPost) -> Unit,
+    onDeleteClick: (CommunityPost) -> Unit,
     onWriteClick: () -> Unit,
     onMyPageClick: () -> Unit,
     onDismissSheet: () -> Unit,
@@ -199,6 +215,9 @@ private fun HomeScreen(
                 mosquitoIndex = selectedDistrict?.mosquitoIndex ?: 72,
                 level = selectedDistrict?.level ?: MosquitoLevel.HIGH,
                 posts = uiState.recentPosts,
+                onLikeClick = onLikeClick,
+                onEditClick = onEditClick,
+                onDeleteClick = onDeleteClick,
                 onWriteClick = onWriteClick,
                 onCloseClick = onDismissSheet,
                 onCollapseClick = {
@@ -215,6 +234,7 @@ private fun HomeScreen(
             dragHandle = null
         ) {
             LoginPromptSheet(
+                purpose = uiState.loginPromptPurpose,
                 onDismissClick = onDismissLoginPrompt,
                 onGoogleClick = onGoogleClick
             )
@@ -273,6 +293,7 @@ private fun HomeProfileButton(
 
 @Composable
 private fun LoginPromptSheet(
+    purpose: LoginPromptPurpose,
     onDismissClick: () -> Unit,
     onGoogleClick: () -> Unit
 ) {
@@ -319,7 +340,10 @@ private fun LoginPromptSheet(
         Spacer(modifier = Modifier.height(22.dp))
 
         Text(
-            text = "글을 작성하려면 로그인이 필요해요.",
+            text = when (purpose) {
+                LoginPromptPurpose.WRITE -> "글을 작성하려면 로그인이 필요해요."
+                LoginPromptPurpose.LIKE -> "좋아요를 누르려면 로그인이 필요해요."
+            },
             color = Color(0xFF747C72),
             style = MaterialTheme.typography.bodyLarge
         )

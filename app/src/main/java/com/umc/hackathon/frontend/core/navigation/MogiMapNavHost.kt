@@ -83,6 +83,15 @@ fun MogiMapNavHost(
                             districtName = districtName
                         )
                     )
+                },
+                onNavigateToEdit = { postId, districtId, districtName ->
+                    navController.navigate(
+                        AppRoute.EditPost.createRoute(
+                            postId = postId,
+                            districtId = districtId,
+                            districtName = districtName
+                        )
+                    )
                 }
             )
         }
@@ -123,6 +132,38 @@ fun MogiMapNavHost(
             WritePostRoute(
                 districtId = districtId,
                 districtName = districtName,
+                onBackClick = navController::popBackStack
+            )
+        }
+
+        composable(
+            route = AppRoute.EditPost.path,
+            arguments = listOf(
+                navArgument(AppRoute.EditPost.POST_ID) {
+                    type = NavType.LongType
+                },
+                navArgument(AppRoute.EditPost.DISTRICT_ID) {
+                    type = NavType.IntType
+                },
+                navArgument(AppRoute.EditPost.DISTRICT_NAME) {
+                    type = NavType.StringType
+                }
+            )
+        ) { backStackEntry ->
+            val postId = backStackEntry.arguments
+                ?.getLong(AppRoute.EditPost.POST_ID)
+                ?: 0L
+            val districtId = backStackEntry.arguments
+                ?.getInt(AppRoute.EditPost.DISTRICT_ID)
+                ?: 0
+            val districtName = backStackEntry.arguments
+                ?.getString(AppRoute.EditPost.DISTRICT_NAME)
+                .orEmpty()
+
+            WritePostRoute(
+                districtId = districtId,
+                districtName = districtName,
+                postId = postId,
                 onBackClick = navController::popBackStack
             )
         }

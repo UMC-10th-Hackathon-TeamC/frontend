@@ -10,5 +10,7 @@ data class CommunityPost(
     val createdAtText: String,
     val likeCount: Int,
     val commentCount: Int,
+    val isLiked: Boolean = false,
+    val isMine: Boolean = false,
     val createdAtMillis: Long? = null
 )

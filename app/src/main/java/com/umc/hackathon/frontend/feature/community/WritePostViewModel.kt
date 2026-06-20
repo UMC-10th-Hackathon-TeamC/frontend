@@ -14,9 +14,9 @@ import kotlinx.coroutines.launch
 data class WritePostUiState(
     val selectedCategory: String = "제보",
     val authorName: String = "",
-    val title: String = "",
     val content: String = "",
     val isSubmitting: Boolean = false,
+    val isEditing: Boolean = false,
     val errorMessage: String? = null
 )
 
@@ -39,11 +39,28 @@ class WritePostViewModel(
         }
     }
 
-    fun updateTitle(title: String) {
-        uiState = uiState.copy(
-            title = title,
-            errorMessage = null
-        )
+    fun loadPostForEdit(postId: Long) {
+        if (postId <= 0L) return
+
+        viewModelScope.launch {
+            runCatching {
+                communityRepository.getPost(postId)
+            }.onSuccess { post ->
+                post ?: return@onSuccess
+                uiState = uiState.copy(
+                    selectedCategory = post.category,
+                    authorName = post.authorName,
+                    content = post.content,
+                    isEditing = true,
+                    errorMessage = null
+                )
+            }.onFailure { throwable ->
+                uiState = uiState.copy(
+                    isEditing = true,
+                    errorMessage = throwable.message ?: "게시글을 불러오지 못했어요."
+                )
+            }
+        }
     }
 
     fun updateContent(content: String) {
@@ -59,7 +76,7 @@ class WritePostViewModel(
         onSuccess: () -> Unit
     ) {
         if (uiState.isSubmitting) return
-        if (uiState.title.isBlank() || uiState.content.isBlank()) return
+        if (uiState.content.isBlank()) return
 
         viewModelScope.launch {
             uiState = uiState.copy(
@@ -72,7 +89,7 @@ class WritePostViewModel(
                     districtId = districtId,
                     districtName = districtName,
                     category = uiState.selectedCategory,
-                    title = uiState.title,
+                    title = "",  // 명세상 title 필드가 필요해 빈 문자열로 전송
                     content = uiState.content,
                     authorName = uiState.authorName.ifBlank { "모기맵유저" }
                 )
@@ -83,6 +100,37 @@ class WritePostViewModel(
                 uiState = uiState.copy(
                     isSubmitting = false,
                     errorMessage = throwable.message ?: "게시글 작성에 실패했어요."
+                )
+            }
+        }
+    }
+
+    fun updatePost(
+        postId: Long,
+        onSuccess: () -> Unit
+    ) {
+        if (uiState.isSubmitting) return
+        if (uiState.content.isBlank()) return
+
+        viewModelScope.launch {
+            uiState = uiState.copy(
+                isSubmitting = true,
+                errorMessage = null
+            )
+
+            runCatching {
+                communityRepository.updatePost(
+                    postId = postId,
+                    title = "",
+                    content = uiState.content
+                )
+            }.onSuccess {
+                uiState = uiState.copy(isSubmitting = false)
+                onSuccess()
+            }.onFailure { throwable ->
+                uiState = uiState.copy(
+                    isSubmitting = false,
+                    errorMessage = throwable.message ?: "게시글 수정에 실패했어요."
                 )
             }
         }

@@ -18,4 +18,18 @@ sealed class AppRoute(val path: String) {
             return "write/$districtId/${Uri.encode(districtName)}"
         }
     }
+
+    data object EditPost : AppRoute("edit/{postId}/{districtId}/{districtName}") {
+        const val POST_ID = "postId"
+        const val DISTRICT_ID = "districtId"
+        const val DISTRICT_NAME = "districtName"
+
+        fun createRoute(
+            postId: Long,
+            districtId: Int,
+            districtName: String
+        ): String {
+            return "edit/$postId/$districtId/${Uri.encode(districtName)}"
+        }
+    }
 }

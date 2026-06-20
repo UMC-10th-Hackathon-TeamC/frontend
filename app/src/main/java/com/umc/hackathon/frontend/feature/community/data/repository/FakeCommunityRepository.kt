@@ -82,6 +82,7 @@ class FakeCommunityRepository : CommunityRepository {
             createdAtText = "방금 전",
             likeCount = 0,
             commentCount = 0,
+            isMine = true,
             createdAtMillis = nowMillis
         )
         posts = listOf(post) + posts
@@ -111,28 +112,36 @@ class FakeCommunityRepository : CommunityRepository {
     }
 
     override suspend fun likePost(postId: Long): Int {
-        return updateLikeCount(
+        return updateLikeState(
             postId = postId,
-            delta = 1
+            isLiked = true
         )
     }
 
     override suspend fun unlikePost(postId: Long): Int {
-        return updateLikeCount(
+        return updateLikeState(
             postId = postId,
-            delta = -1
+            isLiked = false
         )
     }
 
-    private fun updateLikeCount(
+    private fun updateLikeState(
         postId: Long,
-        delta: Int
+        isLiked: Boolean
     ): Int {
         var nextLikeCount = 0
         posts = posts.map { post ->
             if (post.id == postId) {
+                val delta = when {
+                    isLiked && !post.isLiked -> 1
+                    !isLiked && post.isLiked -> -1
+                    else -> 0
+                }
                 nextLikeCount = (post.likeCount + delta).coerceAtLeast(0)
-                post.copy(likeCount = nextLikeCount)
+                post.copy(
+                    likeCount = nextLikeCount,
+                    isLiked = isLiked
+                )
             } else {
                 post
             }

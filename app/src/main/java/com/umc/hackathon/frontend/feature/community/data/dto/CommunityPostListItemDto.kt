@@ -5,12 +5,21 @@ import com.umc.hackathon.frontend.feature.community.model.CommunityPost
 data class CommunityPostListItemDto(
     val id: Long,
     val title: String,
+    val content: String? = null,
     val category: String,
     val author: String,
     val viewCount: Int,
     val likeCount: Int,
     val commentCount: Int,
-    val createdAt: String
+    val createdAt: String,
+    val liked: Boolean? = null,
+    val isLiked: Boolean? = null,
+    val likedByMe: Boolean? = null,
+    val mine: Boolean? = null,
+    val isMine: Boolean? = null,
+    val writtenByMe: Boolean? = null,
+    val owner: Boolean? = null,
+    val isAuthor: Boolean? = null
 ) {
     fun toDomain(districtName: String): CommunityPost {
         return CommunityPost(
@@ -18,11 +27,13 @@ data class CommunityPostListItemDto(
             districtName = districtName,
             category = category,
             title = title,
-            content = title,
+            content = content ?: title,
             authorName = author,
             createdAtText = createdAt.toRelativeTimeTextFromIso(),
             likeCount = likeCount,
-            commentCount = commentCount
+            commentCount = commentCount,
+            isLiked = isLiked ?: liked ?: likedByMe ?: false,
+            isMine = isMine ?: mine ?: writtenByMe ?: owner ?: isAuthor ?: false
         )
     }
 }
