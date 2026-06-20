@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -27,10 +28,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -39,6 +43,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
 import com.umc.hackathon.frontend.PendingWritePostNavigation
 import com.umc.hackathon.frontend.core.data.AuthTokenStore
 import com.umc.hackathon.frontend.core.model.DistrictMosquitoIndex
@@ -48,6 +53,7 @@ import com.umc.hackathon.frontend.feature.community.CommunitySheet
 import com.umc.hackathon.frontend.feature.district.DistrictInfoSheet
 import com.umc.hackathon.frontend.feature.onboarding.data.repository.AuthRepositoryProvider
 import com.umc.hackathon.frontend.feature.ranking.RankingBottomSheet
+import kotlinx.coroutines.launch
 
 @Composable
 fun HomeRoute(
@@ -57,6 +63,7 @@ fun HomeRoute(
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val coroutineScope = rememberCoroutineScope()
     val authTokenStore = remember(context) {
         AuthTokenStore(context.applicationContext)
     }
@@ -72,6 +79,9 @@ fun HomeRoute(
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 viewModel.refreshSelectedDistrictPosts()
+                coroutineScope.launch {
+                    viewModel.updateLoginState(authTokenStore.hasAccessToken())
+                }
             }
         }
 
@@ -139,23 +149,15 @@ private fun HomeScreen(
             modifier = Modifier.fillMaxSize()
         )
 
-        Box(
+        HomeProfileButton(
+            isLoggedIn = uiState.isLoggedIn,
+            nickname = uiState.nickname,
+            profileImageUrl = uiState.profileImageUrl,
+            onClick = onMyPageClick,
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .padding(24.dp)
-                .background(
-                    color = MaterialTheme.colorScheme.primary,
-                    shape = RoundedCornerShape(32.dp)
-                )
-                .clickable { onMyPageClick() }
-                .padding(horizontal = 18.dp, vertical = 12.dp)
-        ) {
-            Text(
-                text = "?",
-                color = MaterialTheme.colorScheme.onPrimary,
-                fontWeight = FontWeight.Bold
-            )
-        }
+        )
 
         if (shouldShowRankingSheet) {
             RankingBottomSheet(
@@ -215,6 +217,55 @@ private fun HomeScreen(
             LoginPromptSheet(
                 onDismissClick = onDismissLoginPrompt,
                 onGoogleClick = onGoogleClick
+            )
+        }
+    }
+}
+
+@Composable
+private fun HomeProfileButton(
+    isLoggedIn: Boolean,
+    nickname: String,
+    profileImageUrl: String?,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val fallbackText = if (isLoggedIn) {
+        nickname.trim().firstOrNull()?.toString() ?: "?"
+    } else {
+        "?"
+    }
+
+    Box(
+        modifier = modifier
+            .size(52.dp)
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.primary)
+            .border(
+                width = 3.dp,
+                color = Color.White,
+                shape = CircleShape
+            )
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        if (isLoggedIn && !profileImageUrl.isNullOrBlank()) {
+            AsyncImage(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(CircleShape),
+                model = profileImageUrl,
+                contentDescription = "마이페이지",
+                contentScale = ContentScale.Crop,
+                error = null,
+                fallback = null
+            )
+        } else {
+            Text(
+                text = fallbackText,
+                color = MaterialTheme.colorScheme.onPrimary,
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp
             )
         }
     }

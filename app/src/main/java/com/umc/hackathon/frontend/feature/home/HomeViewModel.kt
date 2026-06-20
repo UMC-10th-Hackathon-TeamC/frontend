@@ -12,10 +12,14 @@ import com.umc.hackathon.frontend.feature.community.data.repository.CommunityRep
 import com.umc.hackathon.frontend.feature.community.model.CommunityPost
 import com.umc.hackathon.frontend.feature.home.data.repository.HomeRepository
 import com.umc.hackathon.frontend.feature.home.data.repository.HomeRepositoryProvider
+import com.umc.hackathon.frontend.feature.mypage.data.repository.MyPageRepository
+import com.umc.hackathon.frontend.feature.mypage.data.repository.MyPageRepositoryProvider
 import kotlinx.coroutines.launch
 
 data class HomeUiState(
     val isLoggedIn: Boolean = false,
+    val nickname: String = "",
+    val profileImageUrl: String? = null,
     val districtIndexes: List<DistrictMosquitoIndex> = emptyList(),
     val districtRanking: DistrictRanking? = null,
     val recentPosts: List<CommunityPost> = emptyList(),
@@ -28,7 +32,8 @@ data class HomeUiState(
 
 class HomeViewModel(
     private val homeRepository: HomeRepository = HomeRepositoryProvider.create(),
-    private val communityRepository: CommunityRepository = CommunityRepositoryProvider.create()
+    private val communityRepository: CommunityRepository = CommunityRepositoryProvider.create(),
+    private val myPageRepository: MyPageRepository = MyPageRepositoryProvider.create()
 ) : ViewModel() {
     var uiState by mutableStateOf(HomeUiState())
         private set
@@ -126,7 +131,28 @@ class HomeViewModel(
 
     //사용자가 로그인했는지 판단
     fun updateLoginState(isLoggedIn: Boolean) {
-        uiState = uiState.copy(isLoggedIn = isLoggedIn)
+        uiState = uiState.copy(
+            isLoggedIn = isLoggedIn,
+            nickname = if (isLoggedIn) uiState.nickname else "",
+            profileImageUrl = if (isLoggedIn) uiState.profileImageUrl else null
+        )
+
+        if (isLoggedIn) {
+            loadProfile()
+        }
+    }
+
+    private fun loadProfile() {
+        viewModelScope.launch {
+            runCatching {
+                myPageRepository.getMyProfile()
+            }.onSuccess { profile ->
+                uiState = uiState.copy(
+                    nickname = profile?.nickname.orEmpty(),
+                    profileImageUrl = profile?.profileImageUrl
+                )
+            }
+        }
     }
 
     private suspend fun loadPosts(districtName: String): List<CommunityPost> {
