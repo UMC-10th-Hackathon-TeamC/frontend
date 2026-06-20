@@ -10,7 +10,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.umc.hackathon.frontend.PendingWritePostDestination
 import com.umc.hackathon.frontend.feature.home.HomeRoute
 import com.umc.hackathon.frontend.feature.mypage.MyPageRoute
 import com.umc.hackathon.frontend.feature.onboarding.OnboardingRoute
@@ -21,14 +20,12 @@ fun MogiMapNavHost(
     innerPadding: PaddingValues,
     startDestination: String = AppRoute.Onboarding.path,
     shouldNavigateHome: Boolean = false,
-    pendingWritePostDestination: PendingWritePostDestination? = null,
-    onHomeNavigationHandled: () -> Unit = {},
-    onPendingWritePostHandled: () -> Unit = {}
+    onHomeNavigationHandled: () -> Unit = {}
 ) {
     val navController = rememberNavController()
     val modifier = Modifier.padding(innerPadding)
 
-    LaunchedEffect(shouldNavigateHome, pendingWritePostDestination) {
+    LaunchedEffect(shouldNavigateHome) {
         if (shouldNavigateHome) {
             navController.navigate(AppRoute.Home.path) {
                 popUpTo(AppRoute.Onboarding.path) {
@@ -36,19 +33,6 @@ fun MogiMapNavHost(
                 }
                 launchSingleTop = true
             }
-
-            pendingWritePostDestination?.let { destination ->
-                navController.navigate(
-                    AppRoute.WritePost.createRoute(
-                        districtId = destination.districtId,
-                        districtName = destination.districtName
-                    )
-                ) {
-                    launchSingleTop = true
-                }
-                onPendingWritePostHandled()
-            }
-
             onHomeNavigationHandled()
         }
     }

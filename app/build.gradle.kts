@@ -13,7 +13,7 @@ val localProperties = Properties().apply {
 }
 val apiBaseUrl = localProperties.getProperty(
     "API_BASE_URL",
-    "http://10.0.2.2:3000/api/v1/"
+    "http://umc10-node.kro.kr/"
 )
 val useMockApi = localProperties.getProperty("USE_MOCK_API", "true").toBoolean()
 

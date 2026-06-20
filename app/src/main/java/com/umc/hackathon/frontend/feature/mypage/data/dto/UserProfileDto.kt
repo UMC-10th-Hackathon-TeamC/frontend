@@ -3,6 +3,7 @@ package com.umc.hackathon.frontend.feature.mypage.data.dto
 import com.umc.hackathon.frontend.core.model.toMosquitoLevel
 import com.umc.hackathon.frontend.feature.mypage.model.MyDistrict
 import com.umc.hackathon.frontend.feature.mypage.model.UserProfile
+import kotlin.math.roundToInt
 
 data class UserProfileDto(
     val id: Int,
@@ -33,14 +34,14 @@ data class UpdateNicknameResponseDto(
 data class CurrentDistrictDto(
     val id: Int,
     val name: String,
-    val mosquitoIndex: Int,
+    val mosquitoIndex: Double,
     val level: String
 ) {
     fun toDomain(): MyDistrict {
         return MyDistrict(
             id = id,
             districtName = name,
-            mosquitoIndex = mosquitoIndex,
+            mosquitoIndex = mosquitoIndex.roundToInt(),
             level = level.toMosquitoLevel()
         )
     }
