@@ -36,10 +36,12 @@ import com.umc.hackathon.frontend.ui.theme.mogiMutedGreenText
 import com.umc.hackathon.frontend.ui.theme.mogiPrimaryGreen
 import com.umc.hackathon.frontend.ui.theme.mogiTextSecondary
 import com.umc.hackathon.frontend.ui.theme.mogiWritePostDistrictText
+import com.umc.hackathon.frontend.ui.theme.mogiWritePostError
 import com.umc.hackathon.frontend.ui.theme.surfaceContainerHighestDark
 
 @Composable
 fun WritePostRoute(
+    districtId: Int,
     districtName: String,
     onBackClick: () -> Unit,
     viewModel: WritePostViewModel = viewModel()
@@ -56,7 +58,13 @@ fun WritePostRoute(
         onTitleChange = viewModel::updateTitle,
         onContentChange = viewModel::updateContent,
         onBackClick = onBackClick,
-        onSubmitClick = onBackClick
+        onSubmitClick = {
+            viewModel.createPost(
+                districtId = districtId,
+                districtName = districtName,
+                onSuccess = onBackClick
+            )
+        }
     )
 }
 
@@ -76,7 +84,9 @@ private fun WritePostScreen(
             .padding(top = 48.dp)
     ) {
         WritePostTopBar(
-            canSubmit = uiState.title.isNotBlank() && uiState.content.isNotBlank(),
+            canSubmit = uiState.title.isNotBlank() &&
+                uiState.content.isNotBlank() &&
+                !uiState.isSubmitting,
             onBackClick = onBackClick,
             onSubmitClick = onSubmitClick
         )
@@ -105,6 +115,17 @@ private fun WritePostScreen(
             onContentChange = onContentChange,
             modifier = Modifier.weight(1f)
         )
+
+        uiState.errorMessage?.let { errorMessage ->
+            Text(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 22.dp, vertical = 8.dp),
+                text = errorMessage,
+                color = mogiWritePostError,
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
 
         WritePostBottomBar(contentLength = uiState.content.length)
     }

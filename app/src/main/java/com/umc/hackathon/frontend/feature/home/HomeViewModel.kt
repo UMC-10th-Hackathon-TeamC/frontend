@@ -66,17 +66,7 @@ class HomeViewModel(
 
     fun showDistrictSheet(districtName: String) {
         viewModelScope.launch {
-            val selectedDistrict = uiState.districtIndexes.firstOrNull {
-                it.districtName == districtName
-            }
-            val recentPosts = if (selectedDistrict == null) {
-                communityRepository.getRecentPosts(districtName)
-            } else {
-                communityRepository.getPostsByDistrict(
-                    districtId = selectedDistrict.id,
-                    districtName = selectedDistrict.districtName
-                )
-            }
+            val recentPosts = loadPosts(districtName)
 
             uiState = uiState.copy(
                 selectedDistrict = districtName,
@@ -85,6 +75,16 @@ class HomeViewModel(
                 isDistrictSheetVisible = true,
                 isCommunitySheetVisible = false,
                 isLoginPromptVisible = false
+            )
+        }
+    }
+
+    fun refreshSelectedDistrictPosts() {
+        val districtName = uiState.selectedDistrict ?: return
+
+        viewModelScope.launch {
+            uiState = uiState.copy(
+                recentPosts = loadPosts(districtName)
             )
         }
     }
@@ -127,5 +127,20 @@ class HomeViewModel(
     //사용자가 로그인했는지 판단
     fun updateLoginState(isLoggedIn: Boolean) {
         uiState = uiState.copy(isLoggedIn = isLoggedIn)
+    }
+
+    private suspend fun loadPosts(districtName: String): List<CommunityPost> {
+        val selectedDistrict = uiState.districtIndexes.firstOrNull {
+            it.districtName == districtName
+        }
+
+        return if (selectedDistrict == null) {
+            communityRepository.getRecentPosts(districtName)
+        } else {
+            communityRepository.getPostsByDistrict(
+                districtId = selectedDistrict.id,
+                districtName = selectedDistrict.districtName
+            )
+        }
     }
 }

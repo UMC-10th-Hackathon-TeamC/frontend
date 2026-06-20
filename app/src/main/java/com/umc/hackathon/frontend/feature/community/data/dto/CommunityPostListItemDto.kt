@@ -20,7 +20,7 @@ data class CommunityPostListItemDto(
             title = title,
             content = title,
             authorName = author,
-            createdAtText = createdAt,
+            createdAtText = createdAt.toRelativeTimeTextFromIso(),
             likeCount = likeCount,
             commentCount = commentCount
         )

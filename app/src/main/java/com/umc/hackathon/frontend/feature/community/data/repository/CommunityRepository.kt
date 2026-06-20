@@ -19,7 +19,8 @@ interface CommunityRepository {
         districtName: String,
         category: String,
         title: String,
-        content: String
+        content: String,
+        authorName: String
     ): CommunityPost
 
     suspend fun updatePost(

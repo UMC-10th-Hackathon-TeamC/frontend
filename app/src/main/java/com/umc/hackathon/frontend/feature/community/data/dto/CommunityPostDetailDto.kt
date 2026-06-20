@@ -23,7 +23,7 @@ data class CommunityPostDetailDto(
             title = title,
             content = content,
             authorName = author,
-            createdAtText = createdAt,
+            createdAtText = updatedAt.ifBlank { createdAt }.toRelativeTimeTextFromIso(),
             likeCount = likeCount,
             commentCount = commentCount
         )

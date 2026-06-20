@@ -4,6 +4,7 @@ import com.umc.hackathon.frontend.core.network.ApiResponse
 import com.umc.hackathon.frontend.feature.community.data.api.CommunityApi
 import com.umc.hackathon.frontend.feature.community.data.dto.CreatePostRequestDto
 import com.umc.hackathon.frontend.feature.community.data.dto.UpdatePostRequestDto
+import com.umc.hackathon.frontend.feature.community.data.dto.toRelativeTimeTextFromIso
 import com.umc.hackathon.frontend.feature.community.model.CommunityPost
 
 class RemoteCommunityRepository(
@@ -39,7 +40,8 @@ class RemoteCommunityRepository(
         districtName: String,
         category: String,
         title: String,
-        content: String
+        content: String,
+        authorName: String
     ): CommunityPost {
         val response = communityApi.createPost(
             CreatePostRequestDto(
@@ -56,8 +58,8 @@ class RemoteCommunityRepository(
             category = category,
             title = response.title,
             content = content,
-            authorName = "",
-            createdAtText = response.createdAt,
+            authorName = authorName,
+            createdAtText = response.createdAt.toRelativeTimeTextFromIso(),
             likeCount = 0,
             commentCount = 0
         )

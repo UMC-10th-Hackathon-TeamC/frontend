@@ -246,6 +246,7 @@ val mogiTipChipContent = Color(0xFF237A3B)
 val mogiDefaultChipBackground = Color(0xFFEAEDE8)
 val mogiDefaultChipContent = Color(0xFF4D564D)
 val mogiWritePostDistrictText = Color(0xFF65D685)
+val mogiWritePostError = Color(0xFFFFB4AB)
 
 
 
