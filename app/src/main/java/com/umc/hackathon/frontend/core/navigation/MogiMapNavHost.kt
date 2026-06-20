@@ -20,12 +20,14 @@ fun MogiMapNavHost(
     innerPadding: PaddingValues,
     startDestination: String = AppRoute.Onboarding.path,
     shouldNavigateHome: Boolean = false,
-    onHomeNavigationHandled: () -> Unit = {}
+    pendingWritePostDistrict: String? = null,
+    onHomeNavigationHandled: () -> Unit = {},
+    onPendingWritePostHandled: () -> Unit = {}
 ) {
     val navController = rememberNavController()
     val modifier = Modifier.padding(innerPadding)
 
-    LaunchedEffect(shouldNavigateHome) {
+    LaunchedEffect(shouldNavigateHome, pendingWritePostDistrict) {
         if (shouldNavigateHome) {
             navController.navigate(AppRoute.Home.path) {
                 popUpTo(AppRoute.Onboarding.path) {
@@ -33,6 +35,14 @@ fun MogiMapNavHost(
                 }
                 launchSingleTop = true
             }
+
+            pendingWritePostDistrict?.let { districtName ->
+                navController.navigate(AppRoute.WritePost.createRoute(districtName)) {
+                    launchSingleTop = true
+                }
+                onPendingWritePostHandled()
+            }
+
             onHomeNavigationHandled()
         }
     }

@@ -36,6 +36,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.umc.hackathon.frontend.PendingWritePostNavigation
 import com.umc.hackathon.frontend.core.data.AuthTokenStore
 import com.umc.hackathon.frontend.core.model.MosquitoLevel
 import com.umc.hackathon.frontend.feature.community.CommunitySheet
@@ -75,6 +76,7 @@ fun HomeRoute(
         onDismissSheet = viewModel::dismissSheets,
         onDismissLoginPrompt = viewModel::dismissLoginPrompt,
         onGoogleClick = {
+            PendingWritePostNavigation.districtName = viewModel.uiState.selectedDistrict ?: "강남구"
             val loginIntent = Intent(
                 Intent.ACTION_VIEW,
                 Uri.parse(authRepository.getGoogleLoginUrl())

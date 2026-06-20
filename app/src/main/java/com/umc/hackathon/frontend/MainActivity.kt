@@ -18,8 +18,19 @@ import com.umc.hackathon.frontend.core.navigation.MogiMapNavHost
 import com.umc.hackathon.frontend.ui.theme.UMCHackathonFrontendTheme
 import kotlinx.coroutines.launch
 
+object PendingWritePostNavigation {
+    var districtName: String? = null
+
+    fun consumeDistrictName(): String? {
+        val consumedDistrictName = districtName
+        districtName = null
+        return consumedDistrictName
+    }
+}
+
 class MainActivity : ComponentActivity() {
     private val shouldNavigateHome = mutableStateOf(false)
+    private val pendingWritePostDistrict = mutableStateOf<String?>(null)
     private val startDestination = mutableStateOf<String?>(null)
     private lateinit var authTokenStore: AuthTokenStore
 
@@ -41,8 +52,12 @@ class MainActivity : ComponentActivity() {
                             innerPadding = innerPadding,
                             startDestination = destination,
                             shouldNavigateHome = shouldNavigateHome.value,
+                            pendingWritePostDistrict = pendingWritePostDistrict.value,
                             onHomeNavigationHandled = {
                                 shouldNavigateHome.value = false
+                            },
+                            onPendingWritePostHandled = {
+                                pendingWritePostDistrict.value = null
                             }
                         )
                     }
@@ -68,6 +83,7 @@ class MainActivity : ComponentActivity() {
 
         startDestination.value = AppRoute.Home.path
         shouldNavigateHome.value = true
+        pendingWritePostDistrict.value = PendingWritePostNavigation.consumeDistrictName()
 
         lifecycleScope.launch {
             authTokenStore.saveTokens(
