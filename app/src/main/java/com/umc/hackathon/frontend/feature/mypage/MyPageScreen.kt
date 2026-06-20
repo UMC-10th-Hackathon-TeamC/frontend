@@ -1,5 +1,7 @@
 package com.umc.hackathon.frontend.feature.mypage
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -23,7 +25,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -36,6 +42,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.umc.hackathon.frontend.core.data.AuthTokenStore
 import com.umc.hackathon.frontend.core.model.MosquitoLevel
+import com.umc.hackathon.frontend.feature.onboarding.data.repository.AuthRepositoryProvider
 
 private val MyPageBackground = Color(0xFFF3FAF1)
 private val PrimaryGreen = Color(0xFF2F7047)
@@ -53,11 +60,32 @@ fun MyPageRoute(
     val authTokenStore = remember(context) {
         AuthTokenStore(context.applicationContext)
     }
+    val authRepository = remember {
+        AuthRepositoryProvider.create()
+    }
+    var isLoggedIn by remember { mutableStateOf<Boolean?>(null) }
     val uiState = viewModel.uiState
+
+    LaunchedEffect(Unit) {
+        val hasToken = authTokenStore.hasAccessToken()
+        isLoggedIn = hasToken
+        if (hasToken) {
+            viewModel.loadMyPage()
+        }
+    }
 
     MyPageScreen(
         uiState = uiState,
+        isAuthChecked = isLoggedIn != null,
+        isLoggedIn = isLoggedIn == true,
         onBackClick = onBackClick,
+        onLoginClick = {
+            val loginIntent = Intent(
+                Intent.ACTION_VIEW,
+                Uri.parse(authRepository.getGoogleLoginUrl())
+            )
+            context.startActivity(loginIntent)
+        },
         onLogoutClick = {
             viewModel.logout(
                 authTokenStore = authTokenStore,
@@ -70,7 +98,10 @@ fun MyPageRoute(
 @Composable
 private fun MyPageScreen(
     uiState: MyPageUiState,
+    isAuthChecked: Boolean,
+    isLoggedIn: Boolean,
     onBackClick: () -> Unit,
+    onLoginClick: () -> Unit,
     onLogoutClick: () -> Unit
 ) {
     Column(
@@ -83,6 +114,22 @@ private fun MyPageScreen(
         MyPageTopBar(onBackClick = onBackClick)
 
         Spacer(modifier = Modifier.height(24.dp))
+
+        if (!isAuthChecked) {
+            Text(
+                modifier = Modifier.fillMaxWidth(),
+                text = "로그인 상태를 확인 중...",
+                style = MaterialTheme.typography.bodyLarge,
+                color = TextSecondary,
+                textAlign = TextAlign.Center
+            )
+            return@Column
+        }
+
+        if (!isLoggedIn) {
+            LoginRequiredCard(onLoginClick = onLoginClick)
+            return@Column
+        }
 
         ProfileCard(uiState = uiState)
 
@@ -174,6 +221,72 @@ private fun ProfileCard(
                     text = uiState.email.ifBlank { "user@gmail.com" },
                     style = MaterialTheme.typography.bodyLarge,
                     color = TextSecondary
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun LoginRequiredCard(
+    onLoginClick: () -> Unit
+) {
+    MyPageCard {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 28.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(76.dp)
+                    .clip(CircleShape)
+                    .background(PrimaryGreen),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "모",
+                    color = Color.White,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Spacer(modifier = Modifier.height(18.dp))
+
+            Text(
+                text = "로그인이 필요합니다",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = TextPrimary
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "내 지역 모기 지수와 프로필 정보를 확인하려면 로그인해주세요.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = TextSecondary,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color.White)
+                    .clickable { onLoginClick() },
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "Google로 계속하기",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimary
                 )
             }
         }
