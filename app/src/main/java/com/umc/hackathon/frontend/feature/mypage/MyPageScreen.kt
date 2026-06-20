@@ -1,7 +1,13 @@
 package com.umc.hackathon.frontend.feature.mypage
 
+import android.Manifest
+import android.annotation.SuppressLint
+import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -38,8 +44,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
 import com.umc.hackathon.frontend.core.data.AuthTokenStore
 import com.umc.hackathon.frontend.core.model.MosquitoLevel
 import com.umc.hackathon.frontend.feature.onboarding.data.repository.AuthRepositoryProvider
@@ -65,12 +74,39 @@ fun MyPageRoute(
     }
     var isLoggedIn by remember { mutableStateOf<Boolean?>(null) }
     val uiState = viewModel.uiState
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val isGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+            permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+
+        if (isGranted) {
+            loadMyPageWithDeviceLocation(
+                context = context,
+                viewModel = viewModel
+            )
+        } else {
+            viewModel.loadMyPageWithDefaultLocation()
+        }
+    }
 
     LaunchedEffect(Unit) {
         val hasToken = authTokenStore.hasAccessToken()
         isLoggedIn = hasToken
         if (hasToken) {
-            viewModel.loadMyPage()
+            if (hasLocationPermission(context)) {
+                loadMyPageWithDeviceLocation(
+                    context = context,
+                    viewModel = viewModel
+                )
+            } else {
+                locationPermissionLauncher.launch(
+                    arrayOf(
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION
+                    )
+                )
+            }
         }
     }
 
@@ -402,7 +438,7 @@ private fun MyDistrictCard(
                     Spacer(modifier = Modifier.height(4.dp))
 
                     Text(
-                        text = if (uiState.isLoading) "GPS 확인 중..." else "GPS 확인 완료",
+                        text = if (uiState.isLoading) "GPS 확인 중..." else uiState.locationStatusText,
                         style = MaterialTheme.typography.bodyLarge,
                         color = TextSecondary
                     )
@@ -555,4 +591,46 @@ private fun mosquitoLevelTextColor(level: MosquitoLevel): Color {
         MosquitoLevel.NORMAL -> Color(0xFFD8A213)
         MosquitoLevel.LOW -> PrimaryGreen
     }
+}
+
+private fun hasLocationPermission(context: Context): Boolean {
+    val hasFineLocation = ContextCompat.checkSelfPermission(
+        context,
+        Manifest.permission.ACCESS_FINE_LOCATION
+    ) == PackageManager.PERMISSION_GRANTED
+    val hasCoarseLocation = ContextCompat.checkSelfPermission(
+        context,
+        Manifest.permission.ACCESS_COARSE_LOCATION
+    ) == PackageManager.PERMISSION_GRANTED
+
+    return hasFineLocation || hasCoarseLocation
+}
+
+@SuppressLint("MissingPermission")
+private fun loadMyPageWithDeviceLocation(
+    context: Context,
+    viewModel: MyPageViewModel
+) {
+    if (!hasLocationPermission(context)) {
+        viewModel.loadMyPageWithDefaultLocation()
+        return
+    }
+
+    val locationClient = LocationServices.getFusedLocationProviderClient(context)
+    locationClient
+        .getCurrentLocation(Priority.PRIORITY_BALANCED_POWER_ACCURACY, null)
+        .addOnSuccessListener { location ->
+            if (location == null) {
+                viewModel.loadMyPageWithDefaultLocation()
+                return@addOnSuccessListener
+            }
+
+            viewModel.loadMyPage(
+                latitude = location.latitude,
+                longitude = location.longitude
+            )
+        }
+        .addOnFailureListener {
+            viewModel.loadMyPageWithDefaultLocation()
+        }
 }
