@@ -9,8 +9,8 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -39,7 +39,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -83,30 +86,34 @@ fun MyPageRoute(
         if (isGranted) {
             loadMyPageWithDeviceLocation(
                 context = context,
-                viewModel = viewModel
+                viewModel = viewModel,
+                isLoggedIn = isLoggedIn == true
             )
         } else {
-            viewModel.loadMyPageWithDefaultLocation()
+            loadMyPageWithDefaultLocation(
+                viewModel = viewModel,
+                isLoggedIn = isLoggedIn == true
+            )
         }
     }
 
     LaunchedEffect(Unit) {
         val hasToken = authTokenStore.hasAccessToken()
         isLoggedIn = hasToken
-        if (hasToken) {
-            if (hasLocationPermission(context)) {
-                loadMyPageWithDeviceLocation(
-                    context = context,
-                    viewModel = viewModel
+
+        if (hasLocationPermission(context)) {
+            loadMyPageWithDeviceLocation(
+                context = context,
+                viewModel = viewModel,
+                isLoggedIn = hasToken
+            )
+        } else {
+            locationPermissionLauncher.launch(
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
                 )
-            } else {
-                locationPermissionLauncher.launch(
-                    arrayOf(
-                        Manifest.permission.ACCESS_FINE_LOCATION,
-                        Manifest.permission.ACCESS_COARSE_LOCATION
-                    )
-                )
-            }
+            )
         }
     }
 
@@ -162,12 +169,11 @@ private fun MyPageScreen(
             return@Column
         }
 
-        if (!isLoggedIn) {
-            LoginRequiredCard(onLoginClick = onLoginClick)
-            return@Column
+        if (isLoggedIn) {
+            ProfileCard(uiState = uiState)
+        } else {
+            GuestProfileCard(onLoginClick = onLoginClick)
         }
-
-        ProfileCard(uiState = uiState)
 
         Spacer(modifier = Modifier.height(20.dp))
 
@@ -177,11 +183,12 @@ private fun MyPageScreen(
 
         SettingCard(uiState = uiState)
 
-        Spacer(modifier = Modifier.height(24.dp))
+        if (isLoggedIn) {
+            Spacer(modifier = Modifier.height(24.dp))
+            LogoutButton(onLogoutClick = onLogoutClick)
+        }
 
-        LogoutButton(onLogoutClick = onLogoutClick)
-
-        uiState.errorMessage?.let { errorMessage ->
+        if (isLoggedIn) uiState.errorMessage?.let { errorMessage ->
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 modifier = Modifier.fillMaxWidth(),
@@ -264,59 +271,36 @@ private fun ProfileCard(
 }
 
 @Composable
-private fun LoginRequiredCard(
+private fun GuestProfileCard(
     onLoginClick: () -> Unit
 ) {
     MyPageCard {
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 30.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .clickable { onLoginClick() }
+                .padding(horizontal = 24.dp, vertical = 24.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "모기맵을 더 편하게 이용해보세요",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = TextPrimary
-            )
+            GuestProfileIcon()
 
-            Spacer(modifier = Modifier.height(22.dp))
+            Spacer(modifier = Modifier.width(20.dp))
 
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                LoginBenefitRow(
-                    title = "내 지역 모기 지수",
-                    description = "현재 위치 기준 지역 정보를 확인해요"
-                )
-                LoginBenefitRow(
-                    title = "프로필 정보",
-                    description = "닉네임과 계정 정보를 관리해요"
-                )
-                LoginBenefitRow(
-                    title = "커뮤니티 참여",
-                    description = "글쓰기와 댓글 기능을 이용해요"
-                )
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(PrimaryGreen)
-                    .clickable { onLoginClick() },
-                contentAlignment = Alignment.Center
-            ) {
+            Column {
                 Text(
-                    text = "Google로 계속하기",
+                    text = "비로그인 사용자",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimary
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "로그인하기 ->",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = PrimaryGreen
                 )
             }
         }
@@ -324,41 +308,37 @@ private fun LoginRequiredCard(
 }
 
 @Composable
-private fun LoginBenefitRow(
-    title: String,
-    description: String
+private fun GuestProfileIcon(
+    modifier: Modifier = Modifier
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(Color(0xFFF6FAF4))
-            .padding(horizontal = 16.dp, vertical = 13.dp),
-        verticalAlignment = Alignment.CenterVertically
+    Box(
+        modifier = modifier
+            .size(78.dp)
+            .clip(CircleShape)
+            .background(Color(0xFFE8EFE7)),
+        contentAlignment = Alignment.Center
     ) {
-        Box(
-            modifier = Modifier
-                .size(8.dp)
-                .clip(CircleShape)
-                .background(PrimaryGreen)
-        )
+        Canvas(modifier = Modifier.size(34.dp)) {
+            val stroke = Stroke(width = 4.dp.toPx())
+            val iconColor = TextSecondary
 
-        Spacer(modifier = Modifier.width(12.dp))
-
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Bold,
-                color = TextPrimary
+            drawCircle(
+                color = iconColor,
+                radius = 8.dp.toPx(),
+                center = Offset(size.width / 2f, 9.dp.toPx()),
+                style = stroke
             )
-
-            Spacer(modifier = Modifier.height(2.dp))
-
-            Text(
-                text = description,
-                style = MaterialTheme.typography.bodySmall,
-                color = TextSecondary
+            drawArc(
+                color = iconColor,
+                startAngle = 200f,
+                sweepAngle = 140f,
+                useCenter = false,
+                topLeft = Offset(4.dp.toPx(), 16.dp.toPx()),
+                size = Size(
+                    width = 26.dp.toPx(),
+                    height = 20.dp.toPx()
+                ),
+                style = stroke
             )
         }
     }
@@ -429,7 +409,9 @@ private fun MyDistrictCard(
                     modifier = Modifier.weight(1f)
                 ) {
                     Text(
-                        text = uiState.districtName.ifBlank { "강남구" },
+                        text = uiState.districtName.ifBlank {
+                            if (uiState.isLoading) "위치 확인 중" else "확인 불가"
+                        },
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
                         color = TextPrimary
@@ -474,7 +456,9 @@ private fun SettingCard(
 
             SettingRow(
                 title = "지역 변경",
-                description = uiState.districtName.ifBlank { "강남구" }
+                description = uiState.districtName.ifBlank {
+                    if (uiState.isLoading) "위치 확인 중" else "확인 불가"
+                }
             )
 
             HorizontalDivider(color = DividerColor)
@@ -609,10 +593,14 @@ private fun hasLocationPermission(context: Context): Boolean {
 @SuppressLint("MissingPermission")
 private fun loadMyPageWithDeviceLocation(
     context: Context,
-    viewModel: MyPageViewModel
+    viewModel: MyPageViewModel,
+    isLoggedIn: Boolean
 ) {
     if (!hasLocationPermission(context)) {
-        viewModel.loadMyPageWithDefaultLocation()
+        loadMyPageWithDefaultLocation(
+            viewModel = viewModel,
+            isLoggedIn = isLoggedIn
+        )
         return
     }
 
@@ -621,16 +609,40 @@ private fun loadMyPageWithDeviceLocation(
         .getCurrentLocation(Priority.PRIORITY_BALANCED_POWER_ACCURACY, null)
         .addOnSuccessListener { location ->
             if (location == null) {
-                viewModel.loadMyPageWithDefaultLocation()
+                loadMyPageWithDefaultLocation(
+                    viewModel = viewModel,
+                    isLoggedIn = isLoggedIn
+                )
                 return@addOnSuccessListener
             }
 
-            viewModel.loadMyPage(
-                latitude = location.latitude,
-                longitude = location.longitude
-            )
+            if (isLoggedIn) {
+                viewModel.loadMyPage(
+                    latitude = location.latitude,
+                    longitude = location.longitude
+                )
+            } else {
+                viewModel.loadCurrentDistrict(
+                    latitude = location.latitude,
+                    longitude = location.longitude
+                )
+            }
         }
         .addOnFailureListener {
-            viewModel.loadMyPageWithDefaultLocation()
+            loadMyPageWithDefaultLocation(
+                viewModel = viewModel,
+                isLoggedIn = isLoggedIn
+            )
         }
+}
+
+private fun loadMyPageWithDefaultLocation(
+    viewModel: MyPageViewModel,
+    isLoggedIn: Boolean
+) {
+    if (isLoggedIn) {
+        viewModel.loadMyPageWithDefaultLocation()
+    } else {
+        viewModel.loadCurrentDistrictWithDefaultLocation()
+    }
 }
