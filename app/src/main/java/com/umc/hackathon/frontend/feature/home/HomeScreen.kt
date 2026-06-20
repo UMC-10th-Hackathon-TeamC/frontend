@@ -26,17 +26,24 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.umc.hackathon.frontend.PendingWritePostNavigation
 import com.umc.hackathon.frontend.core.data.AuthTokenStore
+import com.umc.hackathon.frontend.core.model.DistrictMosquitoIndex
+
 import com.umc.hackathon.frontend.core.model.MosquitoLevel
 import com.umc.hackathon.frontend.feature.community.CommunitySheet
 import com.umc.hackathon.frontend.feature.district.DistrictInfoSheet
@@ -46,10 +53,11 @@ import com.umc.hackathon.frontend.feature.ranking.RankingBottomSheet
 @Composable
 fun HomeRoute(
     onNavigateToMyPage: () -> Unit,
-    onNavigateToWrite: (String) -> Unit,
+    onNavigateToWrite: (Int, String) -> Unit,
     viewModel: HomeViewModel = viewModel()
 ) {
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     val authTokenStore = remember(context) {
         AuthTokenStore(context.applicationContext)
     }
@@ -61,20 +69,40 @@ fun HomeRoute(
         viewModel.updateLoginState(authTokenStore.hasAccessToken())
     }
 
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.refreshSelectedDistrictPosts()
+            }
+        }
+
+        lifecycleOwner.lifecycle.addObserver(observer)
+
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
     HomeScreen(
         uiState = viewModel.uiState,
         onDistrictClick = viewModel::showDistrictSheet,
         onCommunityClick = viewModel::showCommunitySheet,
         onWriteClick = {
-            val districtName = viewModel.uiState.selectedDistrict ?: "강남구"
+            val selectedDistrict = viewModel.uiState.selectedDistrictIndex()
             if (viewModel.requestWrite()) {
-                onNavigateToWrite(districtName)
+                onNavigateToWrite(
+                    selectedDistrict.id,
+                    selectedDistrict.districtName
+                )
             }
         },
         onMyPageClick = onNavigateToMyPage,
         onDismissSheet = viewModel::dismissSheets,
         onDismissLoginPrompt = viewModel::dismissLoginPrompt,
         onGoogleClick = {
+            val selectedDistrict = viewModel.uiState.selectedDistrictIndex()
+            PendingWritePostNavigation.districtId = selectedDistrict.id
+            PendingWritePostNavigation.districtName = selectedDistrict.districtName
             val loginIntent = Intent(
                 Intent.ACTION_VIEW,
                 Uri.parse(authRepository.getGoogleLoginUrl())
@@ -245,4 +273,18 @@ private fun LoginPromptSheet(
         }
         Spacer(modifier = Modifier.height(24.dp))
     }
+}
+
+private fun HomeUiState.selectedDistrictIndex(): DistrictMosquitoIndex {
+    return districtIndexes.firstOrNull {
+        it.districtName == selectedDistrict
+    } ?: districtIndexes.firstOrNull {
+        it.districtName == "강남구"
+    } ?: DistrictMosquitoIndex(
+        districtName = "강남구",
+        mosquitoIndex = 72,
+        latitude = 37.5172,
+        longitude = 127.0473,
+        id = 3
+    )
 }

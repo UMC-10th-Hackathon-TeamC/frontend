@@ -8,7 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.umc.hackathon.frontend.core.model.DistrictMosquitoIndex
 import com.umc.hackathon.frontend.core.model.DistrictRanking
 import com.umc.hackathon.frontend.feature.community.data.repository.CommunityRepository
-import com.umc.hackathon.frontend.feature.community.data.repository.FakeCommunityRepository
+import com.umc.hackathon.frontend.feature.community.data.repository.CommunityRepositoryProvider
 import com.umc.hackathon.frontend.feature.community.model.CommunityPost
 import com.umc.hackathon.frontend.feature.home.data.repository.HomeRepository
 import com.umc.hackathon.frontend.feature.home.data.repository.HomeRepositoryProvider
@@ -28,7 +28,7 @@ data class HomeUiState(
 
 class HomeViewModel(
     private val homeRepository: HomeRepository = HomeRepositoryProvider.create(),
-    private val communityRepository: CommunityRepository = FakeCommunityRepository()
+    private val communityRepository: CommunityRepository = CommunityRepositoryProvider.create()
 ) : ViewModel() {
     var uiState by mutableStateOf(HomeUiState())
         private set
@@ -66,13 +66,25 @@ class HomeViewModel(
 
     fun showDistrictSheet(districtName: String) {
         viewModelScope.launch {
+            val recentPosts = loadPosts(districtName)
+
             uiState = uiState.copy(
                 selectedDistrict = districtName,
-                recentPosts = communityRepository.getRecentPosts(districtName),
+                recentPosts = recentPosts,
                 isRankingSheetVisible = false,
                 isDistrictSheetVisible = true,
                 isCommunitySheetVisible = false,
                 isLoginPromptVisible = false
+            )
+        }
+    }
+
+    fun refreshSelectedDistrictPosts() {
+        val districtName = uiState.selectedDistrict ?: return
+
+        viewModelScope.launch {
+            uiState = uiState.copy(
+                recentPosts = loadPosts(districtName)
             )
         }
     }
@@ -115,5 +127,20 @@ class HomeViewModel(
     //사용자가 로그인했는지 판단
     fun updateLoginState(isLoggedIn: Boolean) {
         uiState = uiState.copy(isLoggedIn = isLoggedIn)
+    }
+
+    private suspend fun loadPosts(districtName: String): List<CommunityPost> {
+        val selectedDistrict = uiState.districtIndexes.firstOrNull {
+            it.districtName == districtName
+        }
+
+        return if (selectedDistrict == null) {
+            communityRepository.getRecentPosts(districtName)
+        } else {
+            communityRepository.getPostsByDistrict(
+                districtId = selectedDistrict.id,
+                districtName = selectedDistrict.districtName
+            )
+        }
     }
 }

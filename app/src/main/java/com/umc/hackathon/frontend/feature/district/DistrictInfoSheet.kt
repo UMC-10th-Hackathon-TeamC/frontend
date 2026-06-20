@@ -2,14 +2,15 @@ package com.umc.hackathon.frontend.feature.district
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -22,6 +23,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -30,6 +32,26 @@ import androidx.compose.ui.unit.sp
 import com.umc.hackathon.frontend.core.model.DistrictMosquitoIndex
 import com.umc.hackathon.frontend.core.model.MosquitoLevel
 import com.umc.hackathon.frontend.feature.community.model.CommunityPost
+import com.umc.hackathon.frontend.ui.theme.mogiDefaultChipBackground
+import com.umc.hackathon.frontend.ui.theme.mogiDefaultChipContent
+import com.umc.hackathon.frontend.ui.theme.mogiDivider
+import com.umc.hackathon.frontend.ui.theme.mogiMosquitoCardBackground
+import com.umc.hackathon.frontend.ui.theme.mogiMutedGreenText
+import com.umc.hackathon.frontend.ui.theme.mogiPostTitle
+import com.umc.hackathon.frontend.ui.theme.mogiPrimaryGreen
+import com.umc.hackathon.frontend.ui.theme.mogiProgressBlue
+import com.umc.hackathon.frontend.ui.theme.mogiProgressGreen
+import com.umc.hackathon.frontend.ui.theme.mogiProgressIndicator
+import com.umc.hackathon.frontend.ui.theme.mogiProgressOrange
+import com.umc.hackathon.frontend.ui.theme.mogiProgressRed
+import com.umc.hackathon.frontend.ui.theme.mogiProgressYellow
+import com.umc.hackathon.frontend.ui.theme.mogiQuestionChipBackground
+import com.umc.hackathon.frontend.ui.theme.mogiQuestionChipContent
+import com.umc.hackathon.frontend.ui.theme.mogiReportChipBackground
+import com.umc.hackathon.frontend.ui.theme.mogiReportChipContent
+import com.umc.hackathon.frontend.ui.theme.mogiTextSecondary
+import com.umc.hackathon.frontend.ui.theme.mogiTipChipBackground
+import com.umc.hackathon.frontend.ui.theme.mogiTipChipContent
 
 @Composable
 fun DistrictInfoSheet(
@@ -48,19 +70,18 @@ fun DistrictInfoSheet(
             .heightIn(min = 250.dp)
             .background(MaterialTheme.colorScheme.surface)
     ) {
-        SheetTopArea(onCommunityClick = onCommunityClick) // 상단 커뮤니티 보기
+        SheetTopArea(onCommunityClick = onCommunityClick)
 
-        DistrictSummaryArea(    // 지역구, 레벨칩, 모기지수, 바텀시트 닫기
+        DistrictSummaryArea(
             districtName = districtName,
             mosquitoIndex = mosquitoIndex,
             level = level,
             onCloseClick = onCloseClick
         )
 
-        Divider(color = Color(0xFFE2E7DF)) // 구분선
+        Divider(color = mogiDivider)
 
-        RecentPostsArea(recentPosts = recentPosts) // 게시물 표시
-
+        RecentPostsArea(recentPosts = recentPosts)
     }
 }
 
@@ -77,7 +98,7 @@ private fun SheetTopArea(
         Text(
             modifier = Modifier.clickable { onCommunityClick() },
             text = "△ 커뮤니티 보기",
-            color = Color(0xFF2F7047),
+            color = mogiPrimaryGreen,
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold
         )
@@ -91,93 +112,126 @@ private fun DistrictSummaryArea(
     level: MosquitoLevel,
     onCloseClick: () -> Unit
 ) {
-    Row(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 36.dp, top = 28.dp, end = 36.dp, bottom = 28.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+            .padding(horizontal = 28.dp, vertical = 22.dp)
+            .clip(RoundedCornerShape(10.dp))
+            .background(mogiMosquitoCardBackground)
+            .padding(horizontal = 20.dp, vertical = 18.dp)
     ) {
-        Column {
+        Column(modifier = Modifier.fillMaxWidth()) {
             Row(
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = districtName,
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF151A15)
+                    modifier = Modifier.weight(1f),
+                    text = "🦟 $districtName 모기 지수",
+                    color = mogiMutedGreenText,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold
                 )
 
-                Spacer(modifier = Modifier.width(12.dp))
-
-                LevelChip(level = level)
+                Box(
+                    modifier = Modifier
+                        .size(28.dp)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.18f))
+                        .clickable { onCloseClick() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "×",
+                        color = Color.White.copy(alpha = 0.75f),
+                        fontSize = 20.sp,
+                        lineHeight = 20.sp
+                    )
+                }
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            Row(
-                verticalAlignment = Alignment.Bottom
-            ) {
-                Text(
-                    text = "모기 지수 ",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = Color(0xFF747C72)
-                )
-                Text(
-                    text = mosquitoIndex.toString(),
-                    fontSize = 30.sp,
-                    lineHeight = 30.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = levelTextColor(level)
-                )
-                Text(
-                    modifier = Modifier.padding(start = 4.dp, bottom = 2.dp),
-                    text = "/ 100",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = Color(0xFF747C72)
-                )
-            }
-        }
-
-        Box(
-            modifier = Modifier
-                .size(42.dp)
-                .background(
-                    color = Color(0xFFEFF2EC),
-                    shape = CircleShape
-                )
-                .clickable { onCloseClick() },
-            contentAlignment = Alignment.Center
-        ) {
             Text(
-                text = "×",
-                color = Color(0xFF4D554D),
-                fontSize = 34.sp,
-                lineHeight = 34.sp
+                text = mosquitoIndex.toString(),
+                color = Color.White,
+                fontSize = 52.sp,
+                lineHeight = 52.sp,
+                fontWeight = FontWeight.Bold
+            )
+
+            Text(
+                text = levelActivityLabel(level),
+                color = Color.White,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            MosquitoIndexProgress(index = mosquitoIndex)
+
+            Spacer(modifier = Modifier.height(18.dp))
+
+            Text(
+                text = mosquitoIndexDescription(
+                    districtName = districtName,
+                    mosquitoIndex = mosquitoIndex,
+                    level = level
+                ),
+                color = mogiMutedGreenText,
+                style = MaterialTheme.typography.bodyMedium,
+                lineHeight = 20.sp
             )
         }
     }
 }
 
 @Composable
-private fun LevelChip(
-    level: MosquitoLevel
+private fun MosquitoIndexProgress(
+    index: Int
 ) {
-    Box(
-        modifier = Modifier
-            .background(
-                color = levelChipBackgroundColor(level),
-                shape = RoundedCornerShape(100)
-            )
-            .padding(horizontal = 12.dp, vertical = 6.dp)
-    ) {
-        Text(
-            text = level.label,
-            color = levelTextColor(level),
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.Bold
+    val progress = (index.coerceIn(0, 100) / 100f)
+    val progressBrush = Brush.horizontalGradient(
+        colors = listOf(
+            mogiProgressBlue,
+            mogiProgressGreen,
+            mogiProgressYellow,
+            mogiProgressOrange,
+            mogiProgressRed
         )
+    )
+
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(14.dp),
+        contentAlignment = Alignment.CenterStart
+    ) {
+        val indicatorOffset = maxWidth * progress - 7.dp
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(5.dp)
+                .clip(RoundedCornerShape(100))
+                .background(progressBrush)
+        )
+        Box(
+            modifier = Modifier
+                .offset(x = indicatorOffset.coerceAtLeast(0.dp))
+                .size(14.dp)
+                .clip(CircleShape)
+                .background(Color.White),
+            contentAlignment = Alignment.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(10.dp)
+                    .clip(CircleShape)
+                    .background(mogiProgressIndicator)
+            )
+        }
     }
 }
 
@@ -194,7 +248,7 @@ private fun RecentPostsArea(
             text = "최근 게시글",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
-            color = Color(0xFF747C72)
+            color = mogiTextSecondary
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -203,7 +257,7 @@ private fun RecentPostsArea(
             Text(
                 text = "아직 게시글이 없어요",
                 style = MaterialTheme.typography.titleMedium,
-                color = Color(0xFF747C72)
+                color = mogiTextSecondary
             )
         } else {
             recentPosts.take(3).forEach { post ->
@@ -231,7 +285,7 @@ private fun RecentPostRow(
             modifier = Modifier.weight(1f),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Medium,
-            color = Color(0xFF30362F),
+            color = mogiPostTitle,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
@@ -269,38 +323,51 @@ private data class ChipColors(
 private fun categoryChipColors(category: String): ChipColors {
     return when (category) {
         "제보" -> ChipColors(
-            background = Color(0xFFFFD9D6),
-            content = Color(0xFFD02020)
+            background = mogiReportChipBackground,
+            content = mogiReportChipContent
         )
         "질문" -> ChipColors(
-            background = Color(0xFFDCE7FF),
-            content = Color(0xFF245BDB)
+            background = mogiQuestionChipBackground,
+            content = mogiQuestionChipContent
         )
         "팁" -> ChipColors(
-            background = Color(0xFFD9F2DF),
-            content = Color(0xFF237A3B)
+            background = mogiTipChipBackground,
+            content = mogiTipChipContent
         )
         else -> ChipColors(
-            background = Color(0xFFEAEDE8),
-            content = Color(0xFF4D564D)
+            background = mogiDefaultChipBackground,
+            content = mogiDefaultChipContent
         )
     }
 }
 
-private fun levelChipBackgroundColor(level: MosquitoLevel): Color {
+private fun levelActivityLabel(level: MosquitoLevel): String {
     return when (level) {
-        MosquitoLevel.LOW -> Color(0xFFDDEEDF)
-        MosquitoLevel.NORMAL -> Color(0xFFFFE9A8)
-        MosquitoLevel.HIGH -> Color(0xFFFFD9BF)
-        MosquitoLevel.VERY_HIGH -> Color(0xFFFFD4D1)
+        MosquitoLevel.LOW -> "잠잠함"
+        MosquitoLevel.NORMAL -> "보통"
+        MosquitoLevel.HIGH -> "활발"
+        MosquitoLevel.VERY_HIGH -> "매우 활발"
     }
 }
 
-private fun levelTextColor(level: MosquitoLevel): Color {
+private fun mosquitoIndexDescription(
+    districtName: String,
+    mosquitoIndex: Int,
+    level: MosquitoLevel
+): String {
     return when (level) {
-        MosquitoLevel.LOW -> Color(0xFF2F7047)
-        MosquitoLevel.NORMAL -> Color(0xFFD09A00)
-        MosquitoLevel.HIGH -> Color(0xFFC25A20)
-        MosquitoLevel.VERY_HIGH -> Color(0xFFD02020)
+        MosquitoLevel.LOW -> "현재 ${districtName}의 모기지수는 $mosquitoIndex 수준으로 ${levelDescription(level)} 편입니다. 모기 활동이 적습니다."
+        MosquitoLevel.NORMAL -> "현재 ${districtName}의 모기지수는 $mosquitoIndex 수준으로 ${levelDescription(level)} 편입니다. 평소처럼 활동하셔도 됩니다."
+        MosquitoLevel.HIGH -> "현재 ${districtName}의 모기지수는 $mosquitoIndex 수준으로 ${levelDescription(level)} 편입니다. 기피제 사용을 권장합니다."
+        MosquitoLevel.VERY_HIGH -> "현재 ${districtName}의 모기지수는 $mosquitoIndex 수준으로 ${levelDescription(level)} 편입니다. 외출 시 각별한 주의가 필요합니다."
+    }
+}
+
+private fun levelDescription(level: MosquitoLevel): String {
+    return when (level) {
+        MosquitoLevel.LOW -> "낮은"
+        MosquitoLevel.NORMAL -> "보통"
+        MosquitoLevel.HIGH -> "높은"
+        MosquitoLevel.VERY_HIGH -> "매우 높은"
     }
 }
