@@ -35,18 +35,38 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.umc.hackathon.frontend.core.model.DistrictMosquitoIndex
+import com.umc.hackathon.frontend.core.model.DistrictRanking
+import com.umc.hackathon.frontend.core.model.DistrictRankingItem
 import com.umc.hackathon.frontend.core.model.MosquitoLevel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 
 @Composable
 fun RankingBottomSheet(
     districtIndexes: List<DistrictMosquitoIndex>,
+    districtRanking: DistrictRanking?,
     modifier: Modifier = Modifier
 ) {
     var expanded by rememberSaveable { mutableStateOf(false) }
-    val ranking = districtIndexes.sortedByDescending { it.mosquitoIndex }
+    val ranking = districtRanking?.items
+        ?.takeIf { it.isNotEmpty() }
+        ?: districtIndexes
+            .sortedByDescending { it.mosquitoIndex }
+            .mapIndexed { index, district ->
+                DistrictRankingItem(
+                    rank = index + 1,
+                    id = district.id,
+                    districtName = district.districtName,
+                    mosquitoIndex = district.mosquitoIndex,
+                    level = district.level
+                )
+            }
+    val rankingDateText = districtRanking?.updatedAt
+        ?.takeIf { it.isNotBlank() }
+        ?.toRankingDateText()
+        ?: todayText()
 
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
         val collapsedHeight = 320.dp
@@ -85,7 +105,7 @@ fun RankingBottomSheet(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text( // 금일 표시
-                text = todayText(),
+                text = rankingDateText,
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color(0xFF747C72)
             )
@@ -135,7 +155,7 @@ fun RankingBottomSheet(
                 verticalArrangement = Arrangement.spacedBy(if (expanded) 0.dp else 12.dp)
             ) {
                 visibleRanking.forEachIndexed { index, district ->
-                    val rank = index + 1
+                    val rank = district.rank.takeIf { it > 0 } ?: index + 1
                     if (expanded) {
                         ExpandedRankingRow(
                             rank = rank,
@@ -156,7 +176,7 @@ fun RankingBottomSheet(
 @Composable
 private fun RankingRow(
     rank: Int,
-    district: DistrictMosquitoIndex
+    district: DistrictRankingItem
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -212,7 +232,7 @@ private fun RankingRow(
 @Composable
 private fun ExpandedRankingRow(
     rank: Int,
-    district: DistrictMosquitoIndex
+    district: DistrictRankingItem
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
@@ -307,6 +327,17 @@ private fun MosquitoIndexBar( // 막대그래프
 
 private fun todayText(): String {
     return SimpleDateFormat("yyyy년 M월 d일", Locale.KOREA).format(Date())
+}
+
+private fun String.toRankingDateText(): String {
+    val apiDateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).apply {
+        timeZone = TimeZone.getTimeZone("UTC")
+    }
+    val displayDateFormat = SimpleDateFormat("yyyy년 M월 d일", Locale.KOREA)
+
+    return runCatching {
+        displayDateFormat.format(apiDateFormat.parse(this) ?: Date())
+    }.getOrDefault(todayText())
 }
 
 private fun rankingProgressColor(index: Int): Color {
