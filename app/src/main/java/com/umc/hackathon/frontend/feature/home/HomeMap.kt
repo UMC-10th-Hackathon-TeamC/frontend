@@ -1,5 +1,7 @@
 package com.umc.hackathon.frontend.feature.home
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -21,6 +23,7 @@ import com.umc.hackathon.frontend.core.model.DistrictMosquitoIndex
 import java.util.Locale
 import com.naver.maps.map.overlay.Marker
 import com.naver.maps.map.overlay.OverlayImage
+import com.umc.hackathon.frontend.feature.home.map.createAdMarkerBitmap
 import com.umc.hackathon.frontend.feature.home.map.createDistrictMarkerBitmap
 @Composable
 fun HomeMap(
@@ -44,6 +47,7 @@ fun HomeMap(
 
     /* 마커 중복 방지 */
     val markers = remember { mutableListOf<Marker>() }
+    val adMarkers = remember { mutableListOf<Marker>() }
 
     /* 안드로이드 생명주기를 지도와 맞춤 */
     DisposableEffect(lifecycle, mapView) {
@@ -87,6 +91,40 @@ fun HomeMap(
                 LatLng(37.5665, 126.9780),
                 10.5
             )
+        }
+    }
+
+    /* 광고 마커는 프론트 mock 데이터 기준으로 지도에 고정 노출 */
+    LaunchedEffect(mapView) {
+        mapView.getMapAsync { naverMap ->
+            adMarkers.forEach { it.map = null }
+            adMarkers.clear()
+
+            mockAdMarkers.forEach { adMarker ->
+                val marker = Marker().apply {
+                    position = LatLng(adMarker.latitude, adMarker.longitude)
+                    icon = OverlayImage.fromBitmap(
+                        createAdMarkerBitmap(
+                            context = context,
+                            adMarker = adMarker
+                        )
+                    )
+                    zIndex = 20
+                    setOnClickListener {
+                        adMarker.linkUrl
+                            ?.takeIf { it.isNotBlank() }
+                            ?.let { url ->
+                                context.startActivity(
+                                    Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                                )
+                            }
+                        true
+                    }
+                    map = naverMap
+                }
+
+                adMarkers.add(marker)
+            }
         }
     }
 
