@@ -46,7 +46,6 @@ import com.umc.hackathon.frontend.core.model.MosquitoLevel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import java.util.TimeZone
 
 @Composable
 fun RankingBottomSheet(
@@ -68,10 +67,7 @@ fun RankingBottomSheet(
                     level = district.level
                 )
             }
-    val rankingDateText = districtRanking?.updatedAt
-        ?.takeIf { it.isNotBlank() }
-        ?.toRankingDateText()
-        ?: todayText()
+    val rankingDateText = todayText()
 
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
         val collapsedHeight = 315.dp
@@ -472,17 +468,6 @@ private fun levelActivityColor(level: MosquitoLevel): Color {
 
 private fun todayText(): String {
     return SimpleDateFormat("yyyy년 M월 d일", Locale.KOREA).format(Date())
-}
-
-private fun String.toRankingDateText(): String {
-    val apiDateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).apply {
-        timeZone = TimeZone.getTimeZone("UTC")
-    }
-    val displayDateFormat = SimpleDateFormat("yyyy년 M월 d일", Locale.KOREA)
-
-    return runCatching {
-        displayDateFormat.format(apiDateFormat.parse(this) ?: Date())
-    }.getOrDefault(todayText())
 }
 
 private fun rankingProgressColor(index: Int): Color {
