@@ -1,6 +1,8 @@
 package com.umc.hackathon.frontend.feature.home
 
+import android.content.Intent
 import android.graphics.BitmapFactory
+import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -26,7 +28,6 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
@@ -41,7 +42,6 @@ import com.umc.hackathon.frontend.feature.community.CommunitySheet
 import com.umc.hackathon.frontend.feature.district.DistrictInfoSheet
 import com.umc.hackathon.frontend.feature.onboarding.data.repository.AuthRepositoryProvider
 import com.umc.hackathon.frontend.feature.ranking.RankingBottomSheet
-import kotlinx.coroutines.launch
 
 @Composable
 fun HomeRoute(
@@ -50,7 +50,6 @@ fun HomeRoute(
     viewModel: HomeViewModel = viewModel()
 ) {
     val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope()
     val authTokenStore = remember(context) {
         AuthTokenStore(context.applicationContext)
     }
@@ -76,19 +75,11 @@ fun HomeRoute(
         onDismissSheet = viewModel::dismissSheets,
         onDismissLoginPrompt = viewModel::dismissLoginPrompt,
         onGoogleClick = {
-            coroutineScope.launch {
-                runCatching {
-                    authRepository.continueWithGoogle()
-                }.onSuccess { tokens ->
-                    authTokenStore.saveTokens(
-                        accessToken = tokens.accessToken,
-                        refreshToken = tokens.refreshToken,
-                        userId = tokens.userId
-                    )
-                    viewModel.updateLoginState(true)
-                    viewModel.dismissLoginPrompt()
-                }
-            }
+            val loginIntent = Intent(
+                Intent.ACTION_VIEW,
+                Uri.parse(authRepository.getGoogleLoginUrl())
+            )
+            context.startActivity(loginIntent)
         }
     )
 }
