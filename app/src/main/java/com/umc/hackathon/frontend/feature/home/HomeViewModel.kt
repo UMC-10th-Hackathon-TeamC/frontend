@@ -6,6 +6,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.umc.hackathon.frontend.core.model.DistrictMosquitoIndex
+import com.umc.hackathon.frontend.core.model.DistrictRanking
 import com.umc.hackathon.frontend.feature.community.data.repository.CommunityRepository
 import com.umc.hackathon.frontend.feature.community.data.repository.FakeCommunityRepository
 import com.umc.hackathon.frontend.feature.community.model.CommunityPost
@@ -16,6 +17,7 @@ import kotlinx.coroutines.launch
 data class HomeUiState(
     val isLoggedIn: Boolean = false,
     val districtIndexes: List<DistrictMosquitoIndex> = emptyList(),
+    val districtRanking: DistrictRanking? = null,
     val recentPosts: List<CommunityPost> = emptyList(),
     val selectedDistrict: String? = null,
     val isRankingSheetVisible: Boolean = false,
@@ -38,9 +40,17 @@ class HomeViewModel(
     private fun loadHomeData() {
         viewModelScope.launch {
             runCatching {
-                homeRepository.getTodayDistrictIndexes()
-            }.onSuccess { districtIndexes ->
-                uiState = uiState.copy(districtIndexes = districtIndexes)
+                val districtIndexes = homeRepository.getTodayDistrictIndexes()
+                val districtRanking = runCatching {
+                    homeRepository.getDistrictRanking()
+                }.getOrNull()
+
+                districtIndexes to districtRanking
+            }.onSuccess { (districtIndexes, districtRanking) ->
+                uiState = uiState.copy(
+                    districtIndexes = districtIndexes,
+                    districtRanking = districtRanking
+                )
             }
         }
     }

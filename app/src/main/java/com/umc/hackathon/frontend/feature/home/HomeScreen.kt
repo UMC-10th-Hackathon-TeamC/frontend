@@ -133,6 +133,7 @@ private fun HomeScreen(
         if (shouldShowRankingSheet) {
             RankingBottomSheet(
                 districtIndexes = uiState.districtIndexes,
+                districtRanking = uiState.districtRanking,
                 modifier = Modifier.align(Alignment.BottomCenter)
             )
         }
