@@ -18,8 +18,35 @@ import com.umc.hackathon.frontend.core.navigation.MogiMapNavHost
 import com.umc.hackathon.frontend.ui.theme.UMCHackathonFrontendTheme
 import kotlinx.coroutines.launch
 
+data class PendingWritePostDestination(
+    val districtId: Int,
+    val districtName: String
+)
+
+object PendingWritePostNavigation {
+    var districtId: Int? = null
+    var districtName: String? = null
+
+    fun consumeDestination(): PendingWritePostDestination? {
+        val consumedDistrictId = districtId
+        val consumedDistrictName = districtName
+        districtId = null
+        districtName = null
+
+        return if (consumedDistrictId == null || consumedDistrictName.isNullOrBlank()) {
+            null
+        } else {
+            PendingWritePostDestination(
+                districtId = consumedDistrictId,
+                districtName = consumedDistrictName
+            )
+        }
+    }
+}
+
 class MainActivity : ComponentActivity() {
     private val shouldNavigateHome = mutableStateOf(false)
+    private val pendingWritePostDestination = mutableStateOf<PendingWritePostDestination?>(null)
     private val startDestination = mutableStateOf<String?>(null)
     private lateinit var authTokenStore: AuthTokenStore
 
@@ -41,8 +68,12 @@ class MainActivity : ComponentActivity() {
                             innerPadding = innerPadding,
                             startDestination = destination,
                             shouldNavigateHome = shouldNavigateHome.value,
+                            pendingWritePostDestination = pendingWritePostDestination.value,
                             onHomeNavigationHandled = {
                                 shouldNavigateHome.value = false
+                            },
+                            onPendingWritePostHandled = {
+                                pendingWritePostDestination.value = null
                             }
                         )
                     }
@@ -68,6 +99,7 @@ class MainActivity : ComponentActivity() {
 
         startDestination.value = AppRoute.Home.path
         shouldNavigateHome.value = true
+        pendingWritePostDestination.value = PendingWritePostNavigation.consumeDestination()
 
         lifecycleScope.launch {
             authTokenStore.saveTokens(

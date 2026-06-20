@@ -1,8 +1,16 @@
 package com.umc.hackathon.frontend.feature.mypage
 
+import android.Manifest
+import android.annotation.SuppressLint
+import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -23,19 +31,30 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
 import com.umc.hackathon.frontend.core.data.AuthTokenStore
 import com.umc.hackathon.frontend.core.model.MosquitoLevel
+import com.umc.hackathon.frontend.feature.onboarding.data.repository.AuthRepositoryProvider
 
 private val MyPageBackground = Color(0xFFF3FAF1)
 private val PrimaryGreen = Color(0xFF2F7047)
@@ -53,11 +72,63 @@ fun MyPageRoute(
     val authTokenStore = remember(context) {
         AuthTokenStore(context.applicationContext)
     }
+    val authRepository = remember {
+        AuthRepositoryProvider.create()
+    }
+    var isLoggedIn by remember { mutableStateOf<Boolean?>(null) }
     val uiState = viewModel.uiState
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val isGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+            permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+
+        if (isGranted) {
+            loadMyPageWithDeviceLocation(
+                context = context,
+                viewModel = viewModel,
+                isLoggedIn = isLoggedIn == true
+            )
+        } else {
+            loadMyPageWithDefaultLocation(
+                viewModel = viewModel,
+                isLoggedIn = isLoggedIn == true
+            )
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        val hasToken = authTokenStore.hasAccessToken()
+        isLoggedIn = hasToken
+
+        if (hasLocationPermission(context)) {
+            loadMyPageWithDeviceLocation(
+                context = context,
+                viewModel = viewModel,
+                isLoggedIn = hasToken
+            )
+        } else {
+            locationPermissionLauncher.launch(
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                )
+            )
+        }
+    }
 
     MyPageScreen(
         uiState = uiState,
+        isAuthChecked = isLoggedIn != null,
+        isLoggedIn = isLoggedIn == true,
         onBackClick = onBackClick,
+        onLoginClick = {
+            val loginIntent = Intent(
+                Intent.ACTION_VIEW,
+                Uri.parse(authRepository.getGoogleLoginUrl())
+            )
+            context.startActivity(loginIntent)
+        },
         onLogoutClick = {
             viewModel.logout(
                 authTokenStore = authTokenStore,
@@ -70,7 +141,10 @@ fun MyPageRoute(
 @Composable
 private fun MyPageScreen(
     uiState: MyPageUiState,
+    isAuthChecked: Boolean,
+    isLoggedIn: Boolean,
     onBackClick: () -> Unit,
+    onLoginClick: () -> Unit,
     onLogoutClick: () -> Unit
 ) {
     Column(
@@ -84,7 +158,22 @@ private fun MyPageScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        ProfileCard(uiState = uiState)
+        if (!isAuthChecked) {
+            Text(
+                modifier = Modifier.fillMaxWidth(),
+                text = "로그인 상태를 확인 중...",
+                style = MaterialTheme.typography.bodyLarge,
+                color = TextSecondary,
+                textAlign = TextAlign.Center
+            )
+            return@Column
+        }
+
+        if (isLoggedIn) {
+            ProfileCard(uiState = uiState)
+        } else {
+            GuestProfileCard(onLoginClick = onLoginClick)
+        }
 
         Spacer(modifier = Modifier.height(20.dp))
 
@@ -94,11 +183,12 @@ private fun MyPageScreen(
 
         SettingCard(uiState = uiState)
 
-        Spacer(modifier = Modifier.height(24.dp))
+        if (isLoggedIn) {
+            Spacer(modifier = Modifier.height(24.dp))
+            LogoutButton(onLogoutClick = onLogoutClick)
+        }
 
-        LogoutButton(onLogoutClick = onLogoutClick)
-
-        uiState.errorMessage?.let { errorMessage ->
+        if (isLoggedIn) uiState.errorMessage?.let { errorMessage ->
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 modifier = Modifier.fillMaxWidth(),
@@ -181,6 +271,80 @@ private fun ProfileCard(
 }
 
 @Composable
+private fun GuestProfileCard(
+    onLoginClick: () -> Unit
+) {
+    MyPageCard {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onLoginClick() }
+                .padding(horizontal = 24.dp, vertical = 24.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            GuestProfileIcon()
+
+            Spacer(modifier = Modifier.width(20.dp))
+
+            Column {
+                Text(
+                    text = "비로그인 사용자",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimary
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "로그인하기 ->",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = PrimaryGreen
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun GuestProfileIcon(
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .size(78.dp)
+            .clip(CircleShape)
+            .background(Color(0xFFE8EFE7)),
+        contentAlignment = Alignment.Center
+    ) {
+        Canvas(modifier = Modifier.size(34.dp)) {
+            val stroke = Stroke(width = 4.dp.toPx())
+            val iconColor = TextSecondary
+
+            drawCircle(
+                color = iconColor,
+                radius = 8.dp.toPx(),
+                center = Offset(size.width / 2f, 9.dp.toPx()),
+                style = stroke
+            )
+            drawArc(
+                color = iconColor,
+                startAngle = 200f,
+                sweepAngle = 140f,
+                useCenter = false,
+                topLeft = Offset(4.dp.toPx(), 16.dp.toPx()),
+                size = Size(
+                    width = 26.dp.toPx(),
+                    height = 20.dp.toPx()
+                ),
+                style = stroke
+            )
+        }
+    }
+}
+
+@Composable
 private fun ProfileImage(
     profileImageUrl: String?
 ) {
@@ -245,7 +409,9 @@ private fun MyDistrictCard(
                     modifier = Modifier.weight(1f)
                 ) {
                     Text(
-                        text = uiState.districtName.ifBlank { "강남구" },
+                        text = uiState.districtName.ifBlank {
+                            if (uiState.isLoading) "위치 확인 중" else "확인 불가"
+                        },
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
                         color = TextPrimary
@@ -254,7 +420,7 @@ private fun MyDistrictCard(
                     Spacer(modifier = Modifier.height(4.dp))
 
                     Text(
-                        text = if (uiState.isLoading) "GPS 확인 중..." else "GPS 확인 완료",
+                        text = if (uiState.isLoading) "GPS 확인 중..." else uiState.locationStatusText,
                         style = MaterialTheme.typography.bodyLarge,
                         color = TextSecondary
                     )
@@ -290,7 +456,9 @@ private fun SettingCard(
 
             SettingRow(
                 title = "지역 변경",
-                description = uiState.districtName.ifBlank { "강남구" }
+                description = uiState.districtName.ifBlank {
+                    if (uiState.isLoading) "위치 확인 중" else "확인 불가"
+                }
             )
 
             HorizontalDivider(color = DividerColor)
@@ -406,5 +574,75 @@ private fun mosquitoLevelTextColor(level: MosquitoLevel): Color {
         MosquitoLevel.HIGH -> Color(0xFFC25A20)
         MosquitoLevel.NORMAL -> Color(0xFFD8A213)
         MosquitoLevel.LOW -> PrimaryGreen
+    }
+}
+
+private fun hasLocationPermission(context: Context): Boolean {
+    val hasFineLocation = ContextCompat.checkSelfPermission(
+        context,
+        Manifest.permission.ACCESS_FINE_LOCATION
+    ) == PackageManager.PERMISSION_GRANTED
+    val hasCoarseLocation = ContextCompat.checkSelfPermission(
+        context,
+        Manifest.permission.ACCESS_COARSE_LOCATION
+    ) == PackageManager.PERMISSION_GRANTED
+
+    return hasFineLocation || hasCoarseLocation
+}
+
+@SuppressLint("MissingPermission")
+private fun loadMyPageWithDeviceLocation(
+    context: Context,
+    viewModel: MyPageViewModel,
+    isLoggedIn: Boolean
+) {
+    if (!hasLocationPermission(context)) {
+        loadMyPageWithDefaultLocation(
+            viewModel = viewModel,
+            isLoggedIn = isLoggedIn
+        )
+        return
+    }
+
+    val locationClient = LocationServices.getFusedLocationProviderClient(context)
+    locationClient
+        .getCurrentLocation(Priority.PRIORITY_BALANCED_POWER_ACCURACY, null)
+        .addOnSuccessListener { location ->
+            if (location == null) {
+                loadMyPageWithDefaultLocation(
+                    viewModel = viewModel,
+                    isLoggedIn = isLoggedIn
+                )
+                return@addOnSuccessListener
+            }
+
+            if (isLoggedIn) {
+                viewModel.loadMyPage(
+                    latitude = location.latitude,
+                    longitude = location.longitude
+                )
+            } else {
+                viewModel.loadCurrentDistrict(
+                    latitude = location.latitude,
+                    longitude = location.longitude
+                )
+            }
+        }
+        .addOnFailureListener {
+            loadMyPageWithDefaultLocation(
+                viewModel = viewModel,
+                isLoggedIn = isLoggedIn
+            )
+        }
+}
+
+private fun loadMyPageWithDefaultLocation(
+    viewModel: MyPageViewModel,
+    isLoggedIn: Boolean
+) {
+    if (isLoggedIn) {
+        viewModel.loadMyPageWithDefaultLocation()
+    } else {
+        viewModel.loadCurrentDistrictWithDefaultLocation()
     }
 }

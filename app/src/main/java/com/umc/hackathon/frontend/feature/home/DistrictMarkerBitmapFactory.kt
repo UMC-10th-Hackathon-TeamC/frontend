@@ -5,11 +5,20 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.graphics.Path
 import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.Typeface
+import androidx.core.graphics.PathParser
 import com.umc.hackathon.frontend.core.model.MosquitoLevel
+import org.w3c.dom.Element
+import java.util.Locale
+import javax.xml.parsers.DocumentBuilderFactory
 import kotlin.math.roundToInt
+
+private const val MARKER_SYMBOL_ASSET_PATH = "symbol/symbol_primary_white.svg"
+private const val MARKER_SYMBOL_VIEWBOX_WIDTH = 84f
+private const val MARKER_SYMBOL_VIEWBOX_HEIGHT = 79f
 
 fun createDistrictMarkerBitmap(
     context: Context,
@@ -24,6 +33,8 @@ fun createDistrictMarkerBitmap(
     val horizontalPadding = context.dpToPx(16f * scale)
     val verticalPadding = context.dpToPx(8f * scale)
     val gap = context.dpToPx(8f * scale)
+    val iconTextGap = context.dpToPx(7f * scale)
+    val iconSize = context.dpToPx(17f * scale)
     val strokeWidth = context.dpToPx(if (selected) 4f else 3f)
     val cornerRadius = context.dpToPx(24f * scale)
     val textSize = context.spToPx(15f * scale)
@@ -44,16 +55,18 @@ fun createDistrictMarkerBitmap(
     textPaint.getTextBounds(indexText, 0, indexText.length, indexBounds)
 
     // 텍스트 크기와 여백을 바탕으로 Bitmap 전체 크기를 계산
-    val textHeight = maxOf(nameBounds.height(), indexBounds.height())
+    val contentHeight = maxOf(nameBounds.height().toFloat(), indexBounds.height().toFloat(), iconSize)
     val width = (
             horizontalPadding * 2 +
+                    iconSize +
+                    iconTextGap +
                     nameBounds.width() +
                     gap +
                     indexBounds.width()
             ).roundToInt()
     val height = (
             verticalPadding * 2 +
-                    textHeight
+                    contentHeight
             ).roundToInt()
 
     // 마커 이미지를 그릴 Bitmap과 Canvas 생성
@@ -101,6 +114,16 @@ fun createDistrictMarkerBitmap(
     val baseline = height / 2f - (textPaint.descent() + textPaint.ascent()) / 2f
     var x = horizontalPadding
 
+    drawMarkerSymbol(
+        context = context,
+        canvas = canvas,
+        left = x,
+        top = (height - iconSize) / 2f,
+        size = iconSize
+    )
+
+    x += iconSize + iconTextGap
+
     // 구 이름
     canvas.drawText(
         districtName,
@@ -120,6 +143,72 @@ fun createDistrictMarkerBitmap(
     )
 
     return bitmap
+}
+
+private fun drawMarkerSymbol(
+    context: Context,
+    canvas: Canvas,
+    left: Float,
+    top: Float,
+    size: Float
+) {
+    val svgPaths = loadMarkerSymbolPaths(context)
+    if (svgPaths.isEmpty()) return
+
+    val symbolScale = size / maxOf(MARKER_SYMBOL_VIEWBOX_WIDTH, MARKER_SYMBOL_VIEWBOX_HEIGHT)
+    val horizontalInset = (size - MARKER_SYMBOL_VIEWBOX_WIDTH * symbolScale) / 2f
+    val verticalInset = (size - MARKER_SYMBOL_VIEWBOX_HEIGHT * symbolScale) / 2f
+
+    canvas.save()
+    canvas.translate(left + horizontalInset, top + verticalInset)
+    canvas.scale(symbolScale, symbolScale)
+
+    svgPaths.forEach { svgPath ->
+        canvas.drawPath(
+            svgPath.path,
+            Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = svgPath.fillColor
+                style = Paint.Style.FILL
+            }
+        )
+    }
+
+    canvas.restore()
+}
+
+private fun loadMarkerSymbolPaths(context: Context): List<MarkerSymbolPath> {
+    return runCatching {
+        context.assets.open(MARKER_SYMBOL_ASSET_PATH).use { inputStream ->
+            val document = DocumentBuilderFactory
+                .newInstance()
+                .newDocumentBuilder()
+                .parse(inputStream)
+            val pathNodes = document.getElementsByTagName("path")
+
+            List(pathNodes.length) { index ->
+                val pathElement = pathNodes.item(index) as Element
+                MarkerSymbolPath(
+                    path = PathParser.createPathFromPathData(pathElement.getAttribute("d")) ?: Path(),
+                    fillColor = pathElement.getAttribute("fill").toAndroidColor()
+                )
+            }
+        }
+    }.getOrDefault(emptyList())
+}
+
+private data class MarkerSymbolPath(
+    val path: Path,
+    val fillColor: Int
+)
+
+private fun String.toAndroidColor(): Int {
+    if (isBlank() || equals("none", ignoreCase = true)) {
+        return Color.WHITE
+    }
+
+    return runCatching {
+        Color.parseColor(uppercase(Locale.US))
+    }.getOrDefault(Color.WHITE)
 }
 
 // 모기지수 단계별 마커 배경색
