@@ -28,11 +28,7 @@ class MyPageViewModel(
     var uiState by mutableStateOf(MyPageUiState())
         private set
 
-    init {
-        loadMyPage()
-    }
-
-    private fun loadMyPage() {
+    fun loadMyPage() {
         viewModelScope.launch {
             uiState = uiState.copy(isLoading = true, errorMessage = null)
 
