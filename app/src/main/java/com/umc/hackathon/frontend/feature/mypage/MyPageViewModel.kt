@@ -73,6 +73,44 @@ class MyPageViewModel(
         )
     }
 
+    fun loadCurrentDistrict(
+        latitude: Double,
+        longitude: Double,
+        locationStatusText: String = "GPS 기반 현재 위치"
+    ) {
+        viewModelScope.launch {
+            uiState = uiState.copy(isLoading = true, errorMessage = null)
+
+            runCatching {
+                repository.getCurrentDistrict(
+                    latitude = latitude,
+                    longitude = longitude
+                )
+            }.onSuccess { district ->
+                uiState = uiState.copy(
+                    isLoading = false,
+                    districtName = district?.districtName.orEmpty(),
+                    mosquitoIndex = district?.mosquitoIndex ?: 0,
+                    mosquitoLevel = district?.level ?: MosquitoLevel.NORMAL,
+                    locationStatusText = locationStatusText
+                )
+            }.onFailure { throwable ->
+                uiState = uiState.copy(
+                    isLoading = false,
+                    errorMessage = throwable.message ?: "현재 위치의 모기 지수를 불러오지 못했어요."
+                )
+            }
+        }
+    }
+
+    fun loadCurrentDistrictWithDefaultLocation() {
+        loadCurrentDistrict(
+            latitude = DEFAULT_LATITUDE,
+            longitude = DEFAULT_LONGITUDE,
+            locationStatusText = "기본 위치 기준"
+        )
+    }
+
     fun updateNickname(nickname: String) {
         viewModelScope.launch {
             runCatching {
