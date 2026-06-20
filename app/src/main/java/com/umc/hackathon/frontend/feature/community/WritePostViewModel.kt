@@ -89,7 +89,7 @@ class WritePostViewModel(
                     districtId = districtId,
                     districtName = districtName,
                     category = uiState.selectedCategory,
-                    title = "",
+                    title = "",  // 명세상 title 필드가 필요해 빈 문자열로 전송
                     content = uiState.content,
                     authorName = uiState.authorName.ifBlank { "모기맵유저" }
                 )
