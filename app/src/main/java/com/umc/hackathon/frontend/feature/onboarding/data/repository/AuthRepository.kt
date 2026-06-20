@@ -1,8 +1,6 @@
 package com.umc.hackathon.frontend.feature.onboarding.data.repository
 
-import com.umc.hackathon.frontend.core.data.AuthTokens
-
 interface AuthRepository {
-    suspend fun continueWithGoogle(): AuthTokens
+    fun getGoogleLoginUrl(): String
     suspend fun continueAsGuest()
 }
