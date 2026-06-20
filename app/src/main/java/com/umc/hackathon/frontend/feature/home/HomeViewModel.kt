@@ -8,7 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.umc.hackathon.frontend.core.model.DistrictMosquitoIndex
 import com.umc.hackathon.frontend.core.model.DistrictRanking
 import com.umc.hackathon.frontend.feature.community.data.repository.CommunityRepository
-import com.umc.hackathon.frontend.feature.community.data.repository.FakeCommunityRepository
+import com.umc.hackathon.frontend.feature.community.data.repository.CommunityRepositoryProvider
 import com.umc.hackathon.frontend.feature.community.model.CommunityPost
 import com.umc.hackathon.frontend.feature.home.data.repository.HomeRepository
 import com.umc.hackathon.frontend.feature.home.data.repository.HomeRepositoryProvider
@@ -28,7 +28,7 @@ data class HomeUiState(
 
 class HomeViewModel(
     private val homeRepository: HomeRepository = HomeRepositoryProvider.create(),
-    private val communityRepository: CommunityRepository = FakeCommunityRepository()
+    private val communityRepository: CommunityRepository = CommunityRepositoryProvider.create()
 ) : ViewModel() {
     var uiState by mutableStateOf(HomeUiState())
         private set
@@ -66,9 +66,21 @@ class HomeViewModel(
 
     fun showDistrictSheet(districtName: String) {
         viewModelScope.launch {
+            val selectedDistrict = uiState.districtIndexes.firstOrNull {
+                it.districtName == districtName
+            }
+            val recentPosts = if (selectedDistrict == null) {
+                communityRepository.getRecentPosts(districtName)
+            } else {
+                communityRepository.getPostsByDistrict(
+                    districtId = selectedDistrict.id,
+                    districtName = selectedDistrict.districtName
+                )
+            }
+
             uiState = uiState.copy(
                 selectedDistrict = districtName,
-                recentPosts = communityRepository.getRecentPosts(districtName),
+                recentPosts = recentPosts,
                 isRankingSheetVisible = false,
                 isDistrictSheetVisible = true,
                 isCommunitySheetVisible = false,

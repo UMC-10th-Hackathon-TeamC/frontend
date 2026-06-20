@@ -3,7 +3,7 @@ package com.umc.hackathon.frontend.feature.community.data.repository
 import com.umc.hackathon.frontend.feature.community.model.CommunityPost
 
 class FakeCommunityRepository : CommunityRepository {
-    private val posts = listOf(
+    private var posts = listOf(
         CommunityPost(
             id = 1,
             districtName = "강남구",
@@ -34,9 +34,94 @@ class FakeCommunityRepository : CommunityRepository {
         }
     }
 
+    override suspend fun getPostsByDistrict(
+        districtId: Int,
+        districtName: String,
+        cursor: Long?,
+        limit: Int?
+    ): List<CommunityPost> {
+        return getRecentPosts(districtName).let { filteredPosts ->
+            if (limit == null) filteredPosts else filteredPosts.take(limit)
+        }
+    }
+
     override suspend fun getPost(postId: Long): CommunityPost? {
         return posts.firstOrNull {
             it.id == postId
         }
+    }
+
+    override suspend fun createPost(
+        districtId: Int,
+        districtName: String,
+        category: String,
+        title: String,
+        content: String
+    ): CommunityPost {
+        val post = CommunityPost(
+            id = (posts.maxOfOrNull { it.id } ?: 0L) + 1L,
+            districtName = districtName,
+            category = category,
+            title = title,
+            content = content,
+            authorName = "모기맵유저",
+            createdAtText = "방금 전",
+            likeCount = 0,
+            commentCount = 0
+        )
+        posts = listOf(post) + posts
+        return post
+    }
+
+    override suspend fun updatePost(
+        postId: Long,
+        title: String?,
+        content: String?
+    ): CommunityPost? {
+        val post = getPost(postId) ?: return null
+        val updatedPost = post.copy(
+            title = title ?: post.title,
+            content = content ?: post.content
+        )
+        posts = posts.map {
+            if (it.id == postId) updatedPost else it
+        }
+        return updatedPost
+    }
+
+    override suspend fun deletePost(postId: Long) {
+        posts = posts.filterNot {
+            it.id == postId
+        }
+    }
+
+    override suspend fun likePost(postId: Long): Int {
+        return updateLikeCount(
+            postId = postId,
+            delta = 1
+        )
+    }
+
+    override suspend fun unlikePost(postId: Long): Int {
+        return updateLikeCount(
+            postId = postId,
+            delta = -1
+        )
+    }
+
+    private fun updateLikeCount(
+        postId: Long,
+        delta: Int
+    ): Int {
+        var nextLikeCount = 0
+        posts = posts.map { post ->
+            if (post.id == postId) {
+                nextLikeCount = (post.likeCount + delta).coerceAtLeast(0)
+                post.copy(likeCount = nextLikeCount)
+            } else {
+                post
+            }
+        }
+        return nextLikeCount
     }
 }
