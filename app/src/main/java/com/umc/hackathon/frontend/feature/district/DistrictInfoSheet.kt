@@ -281,7 +281,7 @@ private fun RecentPostRow(
         Spacer(modifier = Modifier.width(12.dp))
 
         Text(
-            text = post.title.ifBlank { post.content },
+            text = post.title,
             modifier = Modifier.weight(1f),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Medium,
