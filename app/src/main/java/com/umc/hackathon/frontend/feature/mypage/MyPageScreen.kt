@@ -1,5 +1,13 @@
 package com.umc.hackathon.frontend.feature.mypage
 
+import android.Manifest
+import android.annotation.SuppressLint
+import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -23,7 +31,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -32,10 +44,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
 import com.umc.hackathon.frontend.core.data.AuthTokenStore
 import com.umc.hackathon.frontend.core.model.MosquitoLevel
+import com.umc.hackathon.frontend.feature.onboarding.data.repository.AuthRepositoryProvider
 
 private val MyPageBackground = Color(0xFFF3FAF1)
 private val PrimaryGreen = Color(0xFF2F7047)
@@ -53,11 +69,59 @@ fun MyPageRoute(
     val authTokenStore = remember(context) {
         AuthTokenStore(context.applicationContext)
     }
+    val authRepository = remember {
+        AuthRepositoryProvider.create()
+    }
+    var isLoggedIn by remember { mutableStateOf<Boolean?>(null) }
     val uiState = viewModel.uiState
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val isGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+            permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+
+        if (isGranted) {
+            loadMyPageWithDeviceLocation(
+                context = context,
+                viewModel = viewModel
+            )
+        } else {
+            viewModel.loadMyPageWithDefaultLocation()
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        val hasToken = authTokenStore.hasAccessToken()
+        isLoggedIn = hasToken
+        if (hasToken) {
+            if (hasLocationPermission(context)) {
+                loadMyPageWithDeviceLocation(
+                    context = context,
+                    viewModel = viewModel
+                )
+            } else {
+                locationPermissionLauncher.launch(
+                    arrayOf(
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION
+                    )
+                )
+            }
+        }
+    }
 
     MyPageScreen(
         uiState = uiState,
+        isAuthChecked = isLoggedIn != null,
+        isLoggedIn = isLoggedIn == true,
         onBackClick = onBackClick,
+        onLoginClick = {
+            val loginIntent = Intent(
+                Intent.ACTION_VIEW,
+                Uri.parse(authRepository.getGoogleLoginUrl())
+            )
+            context.startActivity(loginIntent)
+        },
         onLogoutClick = {
             viewModel.logout(
                 authTokenStore = authTokenStore,
@@ -70,7 +134,10 @@ fun MyPageRoute(
 @Composable
 private fun MyPageScreen(
     uiState: MyPageUiState,
+    isAuthChecked: Boolean,
+    isLoggedIn: Boolean,
     onBackClick: () -> Unit,
+    onLoginClick: () -> Unit,
     onLogoutClick: () -> Unit
 ) {
     Column(
@@ -83,6 +150,22 @@ private fun MyPageScreen(
         MyPageTopBar(onBackClick = onBackClick)
 
         Spacer(modifier = Modifier.height(24.dp))
+
+        if (!isAuthChecked) {
+            Text(
+                modifier = Modifier.fillMaxWidth(),
+                text = "로그인 상태를 확인 중...",
+                style = MaterialTheme.typography.bodyLarge,
+                color = TextSecondary,
+                textAlign = TextAlign.Center
+            )
+            return@Column
+        }
+
+        if (!isLoggedIn) {
+            LoginRequiredCard(onLoginClick = onLoginClick)
+            return@Column
+        }
 
         ProfileCard(uiState = uiState)
 
@@ -181,6 +264,107 @@ private fun ProfileCard(
 }
 
 @Composable
+private fun LoginRequiredCard(
+    onLoginClick: () -> Unit
+) {
+    MyPageCard {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 30.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "모기맵을 더 편하게 이용해보세요",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = TextPrimary
+            )
+
+            Spacer(modifier = Modifier.height(22.dp))
+
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                LoginBenefitRow(
+                    title = "내 지역 모기 지수",
+                    description = "현재 위치 기준 지역 정보를 확인해요"
+                )
+                LoginBenefitRow(
+                    title = "프로필 정보",
+                    description = "닉네임과 계정 정보를 관리해요"
+                )
+                LoginBenefitRow(
+                    title = "커뮤니티 참여",
+                    description = "글쓰기와 댓글 기능을 이용해요"
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(PrimaryGreen)
+                    .clickable { onLoginClick() },
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "Google로 계속하기",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun LoginBenefitRow(
+    title: String,
+    description: String
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color(0xFFF6FAF4))
+            .padding(horizontal = 16.dp, vertical = 13.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(8.dp)
+                .clip(CircleShape)
+                .background(PrimaryGreen)
+        )
+
+        Spacer(modifier = Modifier.width(12.dp))
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Bold,
+                color = TextPrimary
+            )
+
+            Spacer(modifier = Modifier.height(2.dp))
+
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodySmall,
+                color = TextSecondary
+            )
+        }
+    }
+}
+
+@Composable
 private fun ProfileImage(
     profileImageUrl: String?
 ) {
@@ -254,7 +438,7 @@ private fun MyDistrictCard(
                     Spacer(modifier = Modifier.height(4.dp))
 
                     Text(
-                        text = if (uiState.isLoading) "GPS 확인 중..." else "GPS 확인 완료",
+                        text = if (uiState.isLoading) "GPS 확인 중..." else uiState.locationStatusText,
                         style = MaterialTheme.typography.bodyLarge,
                         color = TextSecondary
                     )
@@ -407,4 +591,46 @@ private fun mosquitoLevelTextColor(level: MosquitoLevel): Color {
         MosquitoLevel.NORMAL -> Color(0xFFD8A213)
         MosquitoLevel.LOW -> PrimaryGreen
     }
+}
+
+private fun hasLocationPermission(context: Context): Boolean {
+    val hasFineLocation = ContextCompat.checkSelfPermission(
+        context,
+        Manifest.permission.ACCESS_FINE_LOCATION
+    ) == PackageManager.PERMISSION_GRANTED
+    val hasCoarseLocation = ContextCompat.checkSelfPermission(
+        context,
+        Manifest.permission.ACCESS_COARSE_LOCATION
+    ) == PackageManager.PERMISSION_GRANTED
+
+    return hasFineLocation || hasCoarseLocation
+}
+
+@SuppressLint("MissingPermission")
+private fun loadMyPageWithDeviceLocation(
+    context: Context,
+    viewModel: MyPageViewModel
+) {
+    if (!hasLocationPermission(context)) {
+        viewModel.loadMyPageWithDefaultLocation()
+        return
+    }
+
+    val locationClient = LocationServices.getFusedLocationProviderClient(context)
+    locationClient
+        .getCurrentLocation(Priority.PRIORITY_BALANCED_POWER_ACCURACY, null)
+        .addOnSuccessListener { location ->
+            if (location == null) {
+                viewModel.loadMyPageWithDefaultLocation()
+                return@addOnSuccessListener
+            }
+
+            viewModel.loadMyPage(
+                latitude = location.latitude,
+                longitude = location.longitude
+            )
+        }
+        .addOnFailureListener {
+            viewModel.loadMyPageWithDefaultLocation()
+        }
 }
