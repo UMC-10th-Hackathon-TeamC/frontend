@@ -1,7 +1,8 @@
 package com.umc.hackathon.frontend.feature.ranking
 
+import android.graphics.BitmapFactory
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -29,11 +31,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.umc.hackathon.frontend.core.model.DistrictMosquitoIndex
 import com.umc.hackathon.frontend.core.model.DistrictRanking
 import com.umc.hackathon.frontend.core.model.DistrictRankingItem
@@ -69,9 +74,11 @@ fun RankingBottomSheet(
         ?: todayText()
 
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
-        val collapsedHeight = 320.dp
+        val collapsedHeight = 315.dp
         val expandedHeight = maxHeight * 0.7f
         val sheetHeight = if (expanded) expandedHeight else collapsedHeight
+        val topThree = ranking.take(3)
+        val lowerRanking = ranking.drop(3)
 
         Column(
             modifier = Modifier
@@ -79,7 +86,7 @@ fun RankingBottomSheet(
                 .heightIn(min = sheetHeight, max = sheetHeight)
                 .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
                 .background(MaterialTheme.colorScheme.surface)
-                .padding(horizontal = 36.dp, vertical = 18.dp)
+                .padding(horizontal = 34.dp, vertical = 18.dp)
         ) {
             Box( // 바텀시트 핸들 손잡이
                 modifier = Modifier
@@ -98,15 +105,15 @@ fun RankingBottomSheet(
                     .clickable { expanded = !expanded },
                 text = if (expanded) "▽ 접기" else "△ 전체 랭킹 보기",
                 color = Color(0xFF2F7047),
-                style = MaterialTheme.typography.bodyLarge,
+                style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Bold
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
             Text( // 금일 표시
                 text = rankingDateText,
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodySmall,
                 color = Color(0xFF747C72)
             )
 
@@ -119,7 +126,7 @@ fun RankingBottomSheet(
             ) {
                 Text(
                     text = if (expanded) "전체 랭킹" else "오늘의 모기 지수 TOP 3",
-                    style = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF151A15)
                 )
@@ -129,10 +136,10 @@ fun RankingBottomSheet(
                         modifier = Modifier
                             .clip(RoundedCornerShape(100))
                             .background(Color(0xFFFFD9D6))
-                            .padding(horizontal = 10.dp, vertical = 6.dp),
+                            .padding(horizontal = 9.dp, vertical = 5.dp),
                         text = "🦟 주의",
                         color = Color(0xFFD02020),
-                        style = MaterialTheme.typography.labelMedium,
+                        style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -140,9 +147,7 @@ fun RankingBottomSheet(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            val visibleRanking = if (expanded) ranking else ranking.take(3)
-
-            Column( // 축소일 땐 3개, 확대일 땐 전부
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .then(
@@ -154,15 +159,30 @@ fun RankingBottomSheet(
                     ),
                 verticalArrangement = Arrangement.spacedBy(if (expanded) 0.dp else 12.dp)
             ) {
-                visibleRanking.forEachIndexed { index, district ->
-                    val rank = district.rank.takeIf { it > 0 } ?: index + 1
-                    if (expanded) {
+                TopRankingCards(rankingItems = topThree)
+
+                if (expanded && lowerRanking.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    HorizontalDivider(
+                        thickness = 1.dp,
+                        color = Color(0xFFE2E7DE)
+                    )
+
+                    Spacer(modifier = Modifier.height(18.dp))
+
+                    Text(
+                        text = "4위 이하",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF747C72)
+                    )
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    lowerRanking.forEachIndexed { index, district ->
+                        val rank = district.rank.takeIf { it > 0 } ?: index + 4
                         ExpandedRankingRow(
-                            rank = rank,
-                            district = district
-                        )
-                    } else {
-                        RankingRow(
                             rank = rank,
                             district = district
                         )
@@ -174,58 +194,114 @@ fun RankingBottomSheet(
 }
 
 @Composable
-private fun RankingRow(
-    rank: Int,
-    district: DistrictRankingItem
+private fun TopRankingCards(
+    rankingItems: List<DistrictRankingItem>
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+        rankingItems.forEachIndexed { index, district ->
+            TopRankingCard(
+                rank = district.rank.takeIf { it > 0 } ?: index + 1,
+                district = district,
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun TopRankingCard(
+    rank: Int,
+    district: DistrictRankingItem,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    val assetPath = rankingImageAssetPath(district.districtName)
+    val imageBitmap = assetPath?.let { path ->
+        runCatching {
+            context.assets.open(path).use { input ->
+                BitmapFactory.decodeStream(input).asImageBitmap()
+            }
+        }.getOrNull()
+    }
+
+    Box(
+        modifier = modifier
+            .aspectRatio(0.72f)
+            .clip(RoundedCornerShape(18.dp))
+            .background(rankingCardFallbackColor(rank))
+    ) {
+        if (imageBitmap != null) {
+            Image(
+                bitmap = imageBitmap,
+                contentDescription = "${district.districtName} 랭킹 이미지",
+                modifier = Modifier.matchParentSize(),
+                contentScale = ContentScale.Crop
+            )
+        }
+
         Box(
             modifier = Modifier
-                .height(38.dp)
-                .width(38.dp)
+                .matchParentSize()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            Color.Transparent,
+                            Color(0x44000000),
+                            Color(0xCC000000)
+                        )
+                    )
+                )
+        )
+
+        Box(
+            modifier = Modifier
+                .padding(12.dp)
+                .width(30.dp)
+                .height(30.dp)
                 .clip(CircleShape)
-                .background(if (rank == 1) Color(0xFF2F7047) else Color(0xFF647064)),
+                .background(rankBadgeColor(rank)),
             contentAlignment = Alignment.Center
         ) {
             Text(
                 text = rank.toString(),
                 color = Color.White,
-                style = MaterialTheme.typography.titleSmall,
+                style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.Bold
             )
         }
 
-        Spacer(modifier = Modifier.width(16.dp))
-
-        Text(
-            modifier = Modifier.width(82.dp),
-            text = district.districtName,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF151A15)
-        )
-
-        Spacer(modifier = Modifier.width(8.dp))
-
-        MosquitoIndexBar(
-            index = district.mosquitoIndex,
+        Column(
             modifier = Modifier
-                .width(152.dp)
-                .height(8.dp)
-        )
+                .align(Alignment.BottomStart)
+                .padding(12.dp)
+        ) {
+            Text(
+                text = district.districtName,
+                color = Color.White,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold
+            )
 
-        Spacer(modifier = Modifier.width(10.dp))
+            Spacer(modifier = Modifier.height(3.dp))
 
-        Text(
-            modifier = Modifier.width(28.dp),
-            text = district.mosquitoIndex.toString(),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = rankingProgressColor(district.mosquitoIndex)
-        )
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = district.mosquitoIndex.toString(),
+                    color = Color.White,
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(modifier = Modifier.width(6.dp))
+
+                MosquitoActivityChip(level = district.level)
+            }
+        }
     }
 }
 
@@ -305,23 +381,92 @@ private fun MosquitoLevelChip(level: MosquitoLevel) {
 }
 
 @Composable
-private fun MosquitoIndexBar( // 막대그래프
-    index: Int,
-    modifier: Modifier = Modifier
-) {
-    val progress = (index.coerceIn(0, 100) / 100f)
-    val progressColor = rankingProgressColor(index)
+private fun MosquitoActivityChip(level: MosquitoLevel) {
+    Text(
+        modifier = Modifier
+            .clip(RoundedCornerShape(100))
+            .background(levelActivityColor(level))
+            .padding(horizontal = 7.dp, vertical = 4.dp),
+        text = levelCardLabel(level),
+        color = Color.White,
+        fontSize = 10.sp,
+        fontWeight = FontWeight.Bold
+    )
+}
 
-    Canvas(modifier = modifier) {
-        val radius = size.height / 2f
-        val progressWidth = size.width * progress
+private fun rankingImageAssetPath(districtName: String): String? {
+    return when (districtName) {
+        "강남구" -> "ranking/gangnam.jpg"
+        "강동구" -> "ranking/gangdong.jpg"
+        "강북구" -> "ranking/gangbuk.jpg"
+        "강서구" -> "ranking/gangseo.jpg"
+        "관악구" -> "ranking/gwanak.jpg"
+        "광진구" -> "ranking/gwangjin.jpg"
+        "구로구" -> "ranking/guro.jpg"
+        "금천구" -> "ranking/geumcheon.jpg"
+        "노원구" -> "ranking/nowon.jpg"
+        "도봉구" -> "ranking/dobong.jpg"
+        "동대문구" -> "ranking/dongdaemun.jpg"
+        "동작구" -> "ranking/dongjak.jpg"
+        "마포구" -> "ranking/mapo.jpg"
+        "서대문구" -> "ranking/seodaemun.jpg"
+        "서초구" -> "ranking/seocho.jpg"
+        "성동구" -> "ranking/seongdong.jpg"
+        "성북구" -> "ranking/seongbuk.jpg"
+        "송파구" -> "ranking/songpa.jpg"
+        "양천구" -> "ranking/yangcheon.jpg"
+        "영등포구" -> "ranking/yeongdeungpo.jpg"
+        "용산구" -> "ranking/yongsan.jpg"
+        "은평구" -> "ranking/eunpyeong.jpg"
+        "종로구" -> "ranking/jongno.jpg"
+        "중구" -> "ranking/jung.jpg"
+        "중랑구" -> "ranking/jungnang.jpg"
+        else -> null
+    }
+}
 
-        // Track 없이 채워진 막대만 그려서 오른쪽에 작은 꼬리가 남지 않게 한다.
-        drawRoundRect(
-            color = progressColor,
-            size = Size(width = progressWidth, height = size.height),
-            cornerRadius = CornerRadius(radius, radius)
-        )
+private fun rankingCardFallbackColor(rank: Int): Color {
+    return when (rank) {
+        1 -> Color(0xFF4F7EA9)
+        2 -> Color(0xFF5F5D6F)
+        3 -> Color(0xFFC58A3B)
+        else -> Color(0xFF2F7047)
+    }
+}
+
+private fun rankBadgeColor(rank: Int): Color {
+    return when (rank) {
+        1 -> Color(0xFFE3BE2C)
+        2 -> Color(0xFFA5A8AD)
+        3 -> Color(0xFFD88622)
+        else -> Color(0xFF747C72)
+    }
+}
+
+private fun levelActivityLabel(level: MosquitoLevel): String {
+    return when (level) {
+        MosquitoLevel.VERY_HIGH -> "심각"
+        MosquitoLevel.HIGH -> "활발"
+        MosquitoLevel.NORMAL -> "보통"
+        MosquitoLevel.LOW -> "낮음"
+    }
+}
+
+private fun levelCardLabel(level: MosquitoLevel): String {
+    return when (level) {
+        MosquitoLevel.VERY_HIGH -> "심각"
+        MosquitoLevel.HIGH -> "활발"
+        MosquitoLevel.NORMAL -> "보통"
+        MosquitoLevel.LOW -> "낮음"
+    }
+}
+
+private fun levelActivityColor(level: MosquitoLevel): Color {
+    return when (level) {
+        MosquitoLevel.VERY_HIGH -> Color(0xFFD02020)
+        MosquitoLevel.HIGH -> Color(0xFFC25A20)
+        MosquitoLevel.NORMAL -> Color(0xFFD8A213)
+        MosquitoLevel.LOW -> Color(0xFF2F7047)
     }
 }
 
