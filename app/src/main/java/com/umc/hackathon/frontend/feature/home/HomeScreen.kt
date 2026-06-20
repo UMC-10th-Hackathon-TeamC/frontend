@@ -44,7 +44,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
-import com.umc.hackathon.frontend.PendingWritePostNavigation
 import com.umc.hackathon.frontend.core.data.AuthTokenStore
 import com.umc.hackathon.frontend.core.model.DistrictMosquitoIndex
 import com.umc.hackathon.frontend.core.model.MosquitoLevel
@@ -120,11 +119,6 @@ fun HomeRoute(
         onDismissSheet = viewModel::dismissSheets,
         onDismissLoginPrompt = viewModel::dismissLoginPrompt,
         onGoogleClick = {
-            if (viewModel.uiState.loginPromptPurpose == LoginPromptPurpose.WRITE) {
-                val selectedDistrict = viewModel.uiState.selectedDistrictIndex()
-                PendingWritePostNavigation.districtId = selectedDistrict.id
-                PendingWritePostNavigation.districtName = selectedDistrict.districtName
-            }
             val loginIntent = Intent(
                 Intent.ACTION_VIEW,
                 Uri.parse(authRepository.getGoogleLoginUrl())
@@ -193,6 +187,7 @@ private fun HomeScreen(
                 selectedDistrict = uiState.districtIndexes.firstOrNull {
                     it.districtName == uiState.selectedDistrict
                 },
+                selectedDistrictDetail = uiState.selectedDistrictDetail,
                 recentPosts = uiState.recentPosts,
                 onCommunityClick = onCommunityClick,
                 onCloseClick = onDismissSheet
