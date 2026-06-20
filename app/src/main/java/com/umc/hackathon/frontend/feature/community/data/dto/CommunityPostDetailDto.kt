@@ -13,7 +13,10 @@ data class CommunityPostDetailDto(
     val likeCount: Int,
     val commentCount: Int,
     val createdAt: String,
-    val updatedAt: String
+    val updatedAt: String,
+    val liked: Boolean? = null,
+    val isLiked: Boolean? = null,
+    val likedByMe: Boolean? = null
 ) {
     fun toDomain(): CommunityPost {
         return CommunityPost(
@@ -25,7 +28,8 @@ data class CommunityPostDetailDto(
             authorName = author,
             createdAtText = updatedAt.ifBlank { createdAt }.toRelativeTimeTextFromIso(),
             likeCount = likeCount,
-            commentCount = commentCount
+            commentCount = commentCount,
+            isLiked = isLiked ?: liked ?: likedByMe ?: false
         )
     }
 }

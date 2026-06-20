@@ -22,6 +22,10 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -60,10 +64,17 @@ fun CommunitySheet(
     mosquitoIndex: Int,
     level: MosquitoLevel,
     posts: List<CommunityPost>,
+    onLikeClick: (CommunityPost) -> Unit,
     onWriteClick: () -> Unit,
     onCloseClick: () -> Unit,
     onCollapseClick: () -> Unit
 ) {
+    var sortType by remember { mutableStateOf(CommunitySortType.LATEST) }
+    val sortedPosts = when (sortType) {
+        CommunitySortType.LATEST -> posts
+        CommunitySortType.POPULAR -> posts.sortedByDescending { it.likeCount }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -84,14 +95,21 @@ fun CommunitySheet(
                 onCloseClick = onCloseClick
             )
 
-            CommunityTitleBar(districtName = districtName)
+            CommunityTitleBar(
+                districtName = districtName,
+                selectedSortType = sortType,
+                onSortTypeChange = { sortType = it }
+            )
 
-            if (posts.isEmpty()) {
+            if (sortedPosts.isEmpty()) {
                 EmptyPostMessage()
             } else {
-                posts.forEachIndexed { index, post ->
-                    CommunityPostItem(post = post)
-                    if (index != posts.lastIndex) {
+                sortedPosts.forEachIndexed { index, post ->
+                    CommunityPostItem(
+                        post = post,
+                        onLikeClick = onLikeClick
+                    )
+                    if (index != sortedPosts.lastIndex) {
                         HorizontalDivider(color = mogiDivider)
                     }
                 }
@@ -261,7 +279,9 @@ private fun MosquitoIndexProgress(
 
 @Composable
 private fun CommunityTitleBar(
-    districtName: String
+    districtName: String,
+    selectedSortType: CommunitySortType,
+    onSortTypeChange: (CommunitySortType) -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -277,21 +297,31 @@ private fun CommunityTitleBar(
             fontWeight = FontWeight.Bold
         )
 
-        SortChip(text = "최신순", selected = true)
+        SortChip(
+            text = "최신순",
+            selected = selectedSortType == CommunitySortType.LATEST,
+            onClick = { onSortTypeChange(CommunitySortType.LATEST) }
+        )
         Spacer(modifier = Modifier.width(6.dp))
-        SortChip(text = "인기순", selected = false)
+        SortChip(
+            text = "인기순",
+            selected = selectedSortType == CommunitySortType.POPULAR,
+            onClick = { onSortTypeChange(CommunitySortType.POPULAR) }
+        )
     }
 }
 
 @Composable
 private fun SortChip(
     text: String,
-    selected: Boolean
+    selected: Boolean,
+    onClick: () -> Unit
 ) {
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(100))
             .background(if (selected) mogiPrimaryGreen else mogiSortUnselectedBackground)
+            .clickable { onClick() }
             .padding(horizontal = 13.dp, vertical = 7.dp)
     ) {
         Text(
@@ -301,6 +331,11 @@ private fun SortChip(
             fontWeight = FontWeight.Bold
         )
     }
+}
+
+private enum class CommunitySortType {
+    LATEST,
+    POPULAR
 }
 
 @Composable
@@ -315,7 +350,8 @@ private fun EmptyPostMessage() {
 
 @Composable
 private fun CommunityPostItem(
-    post: CommunityPost
+    post: CommunityPost,
+    onLikeClick: (CommunityPost) -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -366,11 +402,25 @@ private fun CommunityPostItem(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            Text(
-                text = "♡  ${post.likeCount}",
-                style = MaterialTheme.typography.bodyLarge,
-                color = mogiTextSecondary
-            )
+            Row(
+                modifier = Modifier.clickable { onLikeClick(post) },
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = if (post.isLiked) "♥" else "♡",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = if (post.isLiked) mogiPrimaryGreen else mogiTextSecondary,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(modifier = Modifier.width(6.dp))
+
+                Text(
+                    text = post.likeCount.toString(),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = if (post.isLiked) mogiPrimaryGreen else mogiTextSecondary
+                )
+            }
         }
     }
 }
@@ -564,6 +614,7 @@ private fun CommunitySheetPreview() {
                     commentCount = 8
                 )
             ),
+            onLikeClick = {},
             onWriteClick = {},
             onCloseClick = {},
             onCollapseClick = {}
