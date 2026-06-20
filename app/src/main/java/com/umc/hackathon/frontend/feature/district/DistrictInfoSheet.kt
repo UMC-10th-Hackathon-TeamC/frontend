@@ -272,16 +272,20 @@ private fun RecentPostsArea(
 private fun RecentPostRow(
     post: CommunityPost
 ) {
+    val previewContent = if (post.content.length > 18) {
+        post.content.take(18) + "..."
+    } else {
+        post.content
+    }
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        CategoryChip(category = post.category)
-
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width(6.dp))
 
         Text(
-            text = post.title,
+            text = previewContent,
             modifier = Modifier.weight(1f),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Medium,
