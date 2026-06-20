@@ -5,21 +5,19 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -31,6 +29,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.Lifecycle
@@ -208,14 +207,22 @@ private fun HomeScreen(
     }
 
     if (uiState.isLoginPromptVisible) {
-        ModalBottomSheet(onDismissRequest = onDismissLoginPrompt) {
-            LoginPromptSheet(onGoogleClick = onGoogleClick)
+        ModalBottomSheet(
+            onDismissRequest = onDismissLoginPrompt,
+            containerColor = MaterialTheme.colorScheme.surface,
+            dragHandle = null
+        ) {
+            LoginPromptSheet(
+                onDismissClick = onDismissLoginPrompt,
+                onGoogleClick = onGoogleClick
+            )
         }
     }
 }
 
 @Composable
 private fun LoginPromptSheet(
+    onDismissClick: () -> Unit,
     onGoogleClick: () -> Unit
 ) {
     val context = LocalContext.current
@@ -228,50 +235,80 @@ private fun LoginPromptSheet(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .padding(horizontal = 28.dp, vertical = 26.dp)
     ) {
-        Text(
-            text = "로그인이 필요합니다",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold
-        )
-        Text(
-            text = "글을 작성하려면 로그인이 필요해요.",
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Button(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(40.dp),
-            onClick = onGoogleClick,
-            shape = RoundedCornerShape(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp, vertical = 0.dp)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            BoxWithConstraints(
-                modifier = Modifier.fillMaxWidth(),
+            Text(
+                modifier = Modifier.weight(1f),
+                text = "로그인이 필요합니다",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF151A15)
+            )
+
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clickable { onDismissClick() },
                 contentAlignment = Alignment.Center
             ) {
-                val iconSize = 110.dp
-                val iconStart = maxWidth / 4 - iconSize / 2
+                Text(
+                    text = "×",
+                    color = Color(0xFF747C72),
+                    fontSize = 30.sp,
+                    lineHeight = 34.sp,
+                    fontWeight = FontWeight.Normal
+                )
+            }
+        }
 
+        Spacer(modifier = Modifier.height(22.dp))
+
+        Text(
+            text = "글을 작성하려면 로그인이 필요해요.",
+            color = Color(0xFF747C72),
+            style = MaterialTheme.typography.bodyLarge
+        )
+
+        Spacer(modifier = Modifier.height(36.dp))
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(58.dp)
+                .border(
+                    width = 1.dp,
+                    color = Color(0xFFCAD2C8),
+                    shape = RoundedCornerShape(16.dp)
+                )
+                .clickable { onGoogleClick() },
+            contentAlignment = Alignment.Center
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Image(
                     bitmap = googleIcon,
                     contentDescription = null,
-                    modifier = Modifier
-                        .align(Alignment.CenterStart)
-                        .offset(x = iconStart)
-                        .size(iconSize)
+                    modifier = Modifier.size(60.dp)
                 )
+
+                Spacer(modifier = Modifier.width(14.dp))
+
                 Text(
                     text = "Google로 계속하기",
                     fontSize = 16.sp,
                     lineHeight = 20.sp,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF151A15)
                 )
             }
         }
-        Spacer(modifier = Modifier.height(24.dp))
+
+        Spacer(modifier = Modifier.height(14.dp))
     }
 }
 
