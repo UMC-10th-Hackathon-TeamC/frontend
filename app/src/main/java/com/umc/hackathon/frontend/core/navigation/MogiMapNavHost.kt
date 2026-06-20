@@ -3,6 +3,7 @@ package com.umc.hackathon.frontend.core.navigation
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -17,10 +18,24 @@ import com.umc.hackathon.frontend.feature.community.WritePostRoute
 @Composable
 fun MogiMapNavHost(
     innerPadding: PaddingValues,
-    startDestination: String = AppRoute.Onboarding.path
+    startDestination: String = AppRoute.Onboarding.path,
+    shouldNavigateHome: Boolean = false,
+    onHomeNavigationHandled: () -> Unit = {}
 ) {
     val navController = rememberNavController()
     val modifier = Modifier.padding(innerPadding)
+
+    LaunchedEffect(shouldNavigateHome) {
+        if (shouldNavigateHome) {
+            navController.navigate(AppRoute.Home.path) {
+                popUpTo(AppRoute.Onboarding.path) {
+                    inclusive = true
+                }
+                launchSingleTop = true
+            }
+            onHomeNavigationHandled()
+        }
+    }
 
     NavHost(
         navController = navController,
@@ -29,11 +44,12 @@ fun MogiMapNavHost(
     ) {
         composable(AppRoute.Onboarding.path) {
             OnboardingRoute(
-                onEnterHome = {
+                onFinished = {
                     navController.navigate(AppRoute.Home.path) {
                         popUpTo(AppRoute.Onboarding.path) {
                             inclusive = true
                         }
+                        launchSingleTop = true
                     }
                 }
             )
@@ -50,8 +66,19 @@ fun MogiMapNavHost(
             )
         }
 
+        //로그아웃하면 게스트 지도 홈 화면으로 이동
         composable(AppRoute.MyPage.path) {
-            MyPageRoute(onBackClick = navController::popBackStack)
+            MyPageRoute(
+                onBackClick = navController::popBackStack,
+                onLoggedOut = {
+                    navController.navigate(AppRoute.Home.path) {
+                        popUpTo(AppRoute.Home.path) {
+                            inclusive = true
+                        }
+                        launchSingleTop = true
+                    }
+                }
+            )
         }
 
         composable(

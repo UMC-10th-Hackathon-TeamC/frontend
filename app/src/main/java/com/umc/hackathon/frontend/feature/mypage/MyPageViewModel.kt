@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.umc.hackathon.frontend.core.data.AuthTokenStore
 import com.umc.hackathon.frontend.core.model.MosquitoLevel
 import com.umc.hackathon.frontend.feature.mypage.data.repository.MyPageRepository
 import com.umc.hackathon.frontend.feature.mypage.data.repository.MyPageRepositoryProvider
@@ -80,10 +81,15 @@ class MyPageViewModel(
         }
     }
 
-    fun logout(onLoggedOut: () -> Unit) {
+    //로그아웃하면 토큰 삭제
+    fun logout(
+        authTokenStore: AuthTokenStore,
+        onLoggedOut: () -> Unit
+    ) {
         viewModelScope.launch {
             runCatching {
                 repository.logout()
+                authTokenStore.clearTokens()
             }.onSuccess {
                 onLoggedOut()
             }.onFailure { throwable ->

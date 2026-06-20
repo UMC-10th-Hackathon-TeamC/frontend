@@ -101,4 +101,9 @@ class HomeViewModel(
             isLoginPromptVisible = false
         )
     }
+
+    //사용자가 로그인했는지 판단
+    fun updateLoginState(isLoggedIn: Boolean) {
+        uiState = uiState.copy(isLoggedIn = isLoggedIn)
+    }
 }
