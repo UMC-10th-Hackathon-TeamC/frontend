@@ -53,6 +53,7 @@ import com.umc.hackathon.frontend.feature.ranking.RankingBottomSheet
 fun HomeRoute(
     onNavigateToMyPage: () -> Unit,
     onNavigateToWrite: (Int, String) -> Unit,
+    onNavigateToEdit: (Long, Int, String) -> Unit,
     viewModel: HomeViewModel = viewModel()
 ) {
     val context = LocalContext.current
@@ -87,6 +88,15 @@ fun HomeRoute(
         onDistrictClick = viewModel::showDistrictSheet,
         onCommunityClick = viewModel::showCommunitySheet,
         onLikeClick = viewModel::togglePostLike,
+        onEditClick = { post ->
+            val selectedDistrict = viewModel.uiState.selectedDistrictIndex()
+            onNavigateToEdit(
+                post.id,
+                selectedDistrict.id,
+                selectedDistrict.districtName
+            )
+        },
+        onDeleteClick = viewModel::deletePost,
         onWriteClick = {
             val selectedDistrict = viewModel.uiState.selectedDistrictIndex()
             if (viewModel.requestWrite()) {
@@ -121,6 +131,8 @@ private fun HomeScreen(
     onDistrictClick: (String) -> Unit,
     onCommunityClick: () -> Unit,
     onLikeClick: (CommunityPost) -> Unit,
+    onEditClick: (CommunityPost) -> Unit,
+    onDeleteClick: (CommunityPost) -> Unit,
     onWriteClick: () -> Unit,
     onMyPageClick: () -> Unit,
     onDismissSheet: () -> Unit,
@@ -202,6 +214,8 @@ private fun HomeScreen(
                 level = selectedDistrict?.level ?: MosquitoLevel.HIGH,
                 posts = uiState.recentPosts,
                 onLikeClick = onLikeClick,
+                onEditClick = onEditClick,
+                onDeleteClick = onDeleteClick,
                 onWriteClick = onWriteClick,
                 onCloseClick = onDismissSheet,
                 onCollapseClick = {

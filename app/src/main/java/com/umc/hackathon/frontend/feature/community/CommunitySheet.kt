@@ -18,9 +18,13 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -65,6 +69,8 @@ fun CommunitySheet(
     level: MosquitoLevel,
     posts: List<CommunityPost>,
     onLikeClick: (CommunityPost) -> Unit,
+    onEditClick: (CommunityPost) -> Unit,
+    onDeleteClick: (CommunityPost) -> Unit,
     onWriteClick: () -> Unit,
     onCloseClick: () -> Unit,
     onCollapseClick: () -> Unit
@@ -107,7 +113,9 @@ fun CommunitySheet(
                 sortedPosts.forEachIndexed { index, post ->
                     CommunityPostItem(
                         post = post,
-                        onLikeClick = onLikeClick
+                        onLikeClick = onLikeClick,
+                        onEditClick = onEditClick,
+                        onDeleteClick = onDeleteClick
                     )
                     if (index != sortedPosts.lastIndex) {
                         HorizontalDivider(color = mogiDivider)
@@ -351,8 +359,13 @@ private fun EmptyPostMessage() {
 @Composable
 private fun CommunityPostItem(
     post: CommunityPost,
-    onLikeClick: (CommunityPost) -> Unit
+    onLikeClick: (CommunityPost) -> Unit,
+    onEditClick: (CommunityPost) -> Unit,
+    onDeleteClick: (CommunityPost) -> Unit
 ) {
+    var isMenuExpanded by remember { mutableStateOf(false) }
+    var isDeleteDialogVisible by remember { mutableStateOf(false) }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -378,12 +391,51 @@ private fun CommunityPostItem(
         Spacer(modifier = Modifier.width(14.dp))
 
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = post.authorName,
-                style = MaterialTheme.typography.titleMedium,
-                color = mogiTextPrimary,
-                fontWeight = FontWeight.Bold
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    modifier = Modifier.weight(1f),
+                    text = post.authorName,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = mogiTextPrimary,
+                    fontWeight = FontWeight.Bold
+                )
+
+                if (post.isMine) {
+                    Box {
+                        Text(
+                            modifier = Modifier
+                                .clip(CircleShape)
+                                .clickable { isMenuExpanded = true }
+                                .padding(horizontal = 8.dp, vertical = 2.dp),
+                            text = "⋯",
+                            color = mogiTextSecondary,
+                            fontSize = 22.sp,
+                            lineHeight = 22.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        DropdownMenu(
+                            expanded = isMenuExpanded,
+                            onDismissRequest = { isMenuExpanded = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text(text = "수정") },
+                                onClick = {
+                                    isMenuExpanded = false
+                                    onEditClick(post)
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(text = "삭제") },
+                                onClick = {
+                                    isMenuExpanded = false
+                                    isDeleteDialogVisible = true
+                                }
+                            )
+                        }
+                    }
+                }
+            }
 
             Text(
                 text = post.createdAtText,
@@ -422,6 +474,35 @@ private fun CommunityPostItem(
                 )
             }
         }
+    }
+
+    if (isDeleteDialogVisible) {
+        AlertDialog(
+            onDismissRequest = { isDeleteDialogVisible = false },
+            title = {
+                Text(text = "게시글 삭제")
+            },
+            text = {
+                Text(text = "정말 삭제하시겠습니까?")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        isDeleteDialogVisible = false
+                        onDeleteClick(post)
+                    }
+                ) {
+                    Text(text = "삭제")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { isDeleteDialogVisible = false }
+                ) {
+                    Text(text = "취소")
+                }
+            }
+        )
     }
 }
 
@@ -615,6 +696,8 @@ private fun CommunitySheetPreview() {
                 )
             ),
             onLikeClick = {},
+            onEditClick = {},
+            onDeleteClick = {},
             onWriteClick = {},
             onCloseClick = {},
             onCollapseClick = {}

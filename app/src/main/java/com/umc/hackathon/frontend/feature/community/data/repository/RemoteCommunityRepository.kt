@@ -62,7 +62,8 @@ class RemoteCommunityRepository(
             createdAtText = response.createdAt.toRelativeTimeTextFromIso(),
             likeCount = 0,
             commentCount = 0,
-            isLiked = false
+            isLiked = false,
+            isMine = true
         )
     }
 

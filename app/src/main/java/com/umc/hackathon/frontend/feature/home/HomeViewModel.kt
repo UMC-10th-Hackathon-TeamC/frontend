@@ -158,6 +158,23 @@ class HomeViewModel(
         }
     }
 
+    fun deletePost(post: CommunityPost) {
+        if (!post.isMine) return
+
+        val previousPosts = uiState.recentPosts
+        uiState = uiState.copy(
+            recentPosts = uiState.recentPosts.filterNot { it.id == post.id }
+        )
+
+        viewModelScope.launch {
+            runCatching {
+                communityRepository.deletePost(post.id)
+            }.onFailure {
+                uiState = uiState.copy(recentPosts = previousPosts)
+            }
+        }
+    }
+
     fun dismissSheets() {
         uiState = uiState.copy(
             isRankingSheetVisible = false,

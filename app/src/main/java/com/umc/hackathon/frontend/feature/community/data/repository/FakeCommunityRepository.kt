@@ -82,6 +82,7 @@ class FakeCommunityRepository : CommunityRepository {
             createdAtText = "방금 전",
             likeCount = 0,
             commentCount = 0,
+            isMine = true,
             createdAtMillis = nowMillis
         )
         posts = listOf(post) + posts
