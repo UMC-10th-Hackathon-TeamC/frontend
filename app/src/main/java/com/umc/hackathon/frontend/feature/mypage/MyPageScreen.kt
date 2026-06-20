@@ -235,41 +235,35 @@ private fun LoginRequiredCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 28.dp),
+                .padding(horizontal = 24.dp, vertical = 30.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Box(
-                modifier = Modifier
-                    .size(76.dp)
-                    .clip(CircleShape)
-                    .background(PrimaryGreen),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "모",
-                    color = Color.White,
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
-            Spacer(modifier = Modifier.height(18.dp))
-
             Text(
-                text = "로그인이 필요합니다",
+                text = "모기맵을 더 편하게 이용해보세요",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = TextPrimary
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(22.dp))
 
-            Text(
-                text = "내 지역 모기 지수와 프로필 정보를 확인하려면 로그인해주세요.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondary,
-                textAlign = TextAlign.Center
-            )
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                LoginBenefitRow(
+                    title = "내 지역 모기 지수",
+                    description = "현재 위치 기준 지역 정보를 확인해요"
+                )
+                LoginBenefitRow(
+                    title = "프로필 정보",
+                    description = "닉네임과 계정 정보를 관리해요"
+                )
+                LoginBenefitRow(
+                    title = "커뮤니티 참여",
+                    description = "글쓰기와 댓글 기능을 이용해요"
+                )
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -278,7 +272,7 @@ private fun LoginRequiredCard(
                     .fillMaxWidth()
                     .height(56.dp)
                     .clip(RoundedCornerShape(16.dp))
-                    .background(Color.White)
+                    .background(PrimaryGreen)
                     .clickable { onLoginClick() },
                 contentAlignment = Alignment.Center
             ) {
@@ -286,9 +280,50 @@ private fun LoginRequiredCard(
                     text = "Google로 계속하기",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = TextPrimary
+                    color = Color.White
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun LoginBenefitRow(
+    title: String,
+    description: String
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color(0xFFF6FAF4))
+            .padding(horizontal = 16.dp, vertical = 13.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(8.dp)
+                .clip(CircleShape)
+                .background(PrimaryGreen)
+        )
+
+        Spacer(modifier = Modifier.width(12.dp))
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Bold,
+                color = TextPrimary
+            )
+
+            Spacer(modifier = Modifier.height(2.dp))
+
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodySmall,
+                color = TextSecondary
+            )
         }
     }
 }
