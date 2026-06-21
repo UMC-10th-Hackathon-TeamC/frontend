@@ -29,6 +29,25 @@ class MyPageViewModel(
     var uiState by mutableStateOf(MyPageUiState())
         private set
 
+    fun loadProfile() {
+        viewModelScope.launch {
+            runCatching {
+                repository.getMyProfile()
+            }.onSuccess { profile ->
+                uiState = uiState.copy(
+                    nickname = profile?.nickname.orEmpty(),
+                    email = profile?.email.orEmpty(),
+                    profileImageUrl = profile?.profileImageUrl,
+                    errorMessage = null
+                )
+            }.onFailure { throwable ->
+                uiState = uiState.copy(
+                    errorMessage = throwable.message ?: "프로필 정보를 불러오지 못했어요."
+                )
+            }
+        }
+    }
+
     fun loadMyPage(
         latitude: Double,
         longitude: Double,
@@ -37,15 +56,20 @@ class MyPageViewModel(
         viewModelScope.launch {
             uiState = uiState.copy(isLoading = true, errorMessage = null)
 
-            runCatching {
-                val profile = repository.getMyProfile()
-                val district = repository.getCurrentDistrict(
+            val profileResult = runCatching {
+                repository.getMyProfile()
+            }
+            val districtResult = runCatching {
+                repository.getCurrentDistrict(
                     latitude = latitude,
                     longitude = longitude
                 )
+            }
 
-                profile to district
-            }.onSuccess { (profile, district) ->
+            val profile = profileResult.getOrNull()
+            val district = districtResult.getOrNull()
+
+            if (profileResult.isSuccess || districtResult.isSuccess) {
                 uiState = uiState.copy(
                     isLoading = false,
                     nickname = profile?.nickname.orEmpty(),
@@ -54,12 +78,14 @@ class MyPageViewModel(
                     districtName = district?.districtName.orEmpty(),
                     mosquitoIndex = district?.mosquitoIndex ?: 0,
                     mosquitoLevel = district?.level ?: MosquitoLevel.NORMAL,
-                    locationStatusText = locationStatusText
+                    locationStatusText = locationStatusText,
+                    errorMessage = districtResult.exceptionOrNull()?.message
                 )
-            }.onFailure { throwable ->
+            } else {
+                val throwable = profileResult.exceptionOrNull() ?: districtResult.exceptionOrNull()
                 uiState = uiState.copy(
                     isLoading = false,
-                    errorMessage = throwable.message ?: "마이페이지 정보를 불러오지 못했어요."
+                    errorMessage = throwable?.message ?: "마이페이지 정보를 불러오지 못했어요."
                 )
             }
         }

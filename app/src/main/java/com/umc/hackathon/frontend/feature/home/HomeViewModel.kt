@@ -145,10 +145,15 @@ class HomeViewModel(
         }
 
         val nextLiked = !post.isLiked
+        val optimisticLikeCount = if (nextLiked) {
+            post.likeCount + 1
+        } else {
+            (post.likeCount - 1).coerceAtLeast(0)
+        }
         updatePostLikeState(
             postId = post.id,
             isLiked = nextLiked,
-            likeCount = if (nextLiked) post.likeCount + 1 else (post.likeCount - 1).coerceAtLeast(0)
+            likeCount = optimisticLikeCount
         )
 
         viewModelScope.launch {
@@ -162,13 +167,13 @@ class HomeViewModel(
                 updatePostLikeState(
                     postId = post.id,
                     isLiked = nextLiked,
-                    likeCount = likeCount
+                    likeCount = likeCount ?: optimisticLikeCount
                 )
             }.onFailure {
                 updatePostLikeState(
                     postId = post.id,
-                    isLiked = post.isLiked,
-                    likeCount = post.likeCount
+                    isLiked = nextLiked,
+                    likeCount = optimisticLikeCount
                 )
             }
         }

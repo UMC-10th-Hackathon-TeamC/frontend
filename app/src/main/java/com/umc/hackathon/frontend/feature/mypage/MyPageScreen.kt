@@ -101,6 +101,10 @@ fun MyPageRoute(
         val hasToken = authTokenStore.hasAccessToken()
         isLoggedIn = hasToken
 
+        if (hasToken) {
+            viewModel.loadProfile()
+        }
+
         if (hasLocationPermission(context)) {
             loadMyPageWithDeviceLocation(
                 context = context,
@@ -246,13 +250,22 @@ private fun ProfileCard(
                 .padding(horizontal = 24.dp, vertical = 24.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            ProfileImage(profileImageUrl = uiState.profileImageUrl)
+            ProfileImage(
+                profileImageUrl = uiState.profileImageUrl,
+                nickname = uiState.nickname
+            )
 
             Spacer(modifier = Modifier.width(20.dp))
 
             Column {
                 Text(
-                    text = uiState.nickname.ifBlank { "모기맵유저" },
+                    text = uiState.nickname.ifBlank {
+                        if (uiState.isLoading) {
+                            "프로필 정보 불러오는 중..."
+                        } else {
+                            "닉네임 없음"
+                        }
+                    },
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = TextPrimary
@@ -261,7 +274,13 @@ private fun ProfileCard(
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
-                    text = uiState.email.ifBlank { "user@gmail.com" },
+                    text = uiState.email.ifBlank {
+                        if (uiState.isLoading) {
+                            ""
+                        } else {
+                            "이메일 없음"
+                        }
+                    },
                     style = MaterialTheme.typography.bodyLarge,
                     color = TextSecondary
                 )
@@ -346,7 +365,8 @@ private fun GuestProfileIcon(
 
 @Composable
 private fun ProfileImage(
-    profileImageUrl: String?
+    profileImageUrl: String?,
+    nickname: String
 ) {
     Box(
         modifier = Modifier
@@ -356,7 +376,7 @@ private fun ProfileImage(
         contentAlignment = Alignment.Center
     ) {
         if (profileImageUrl.isNullOrBlank()) {
-            ProfileImageFallback()
+            ProfileImageFallback(nickname = nickname)
         } else {
             AsyncImage(
                 modifier = Modifier
@@ -373,9 +393,12 @@ private fun ProfileImage(
 }
 
 @Composable
-private fun ProfileImageFallback() {
+private fun ProfileImageFallback(
+    nickname: String
+) {
+    val initial = nickname.trim().firstOrNull()?.toString() ?: "?"
     Text(
-        text = "모",
+        text = initial,
         color = Color.White,
         style = MaterialTheme.typography.headlineSmall,
         fontWeight = FontWeight.Bold
