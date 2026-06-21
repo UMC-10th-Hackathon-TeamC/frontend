@@ -38,12 +38,10 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.umc.hackathon.frontend.core.model.MosquitoLevel
 import com.umc.hackathon.frontend.feature.community.model.CommunityPost
-import com.umc.hackathon.frontend.ui.theme.UMCHackathonFrontendTheme
 import com.umc.hackathon.frontend.ui.theme.mogiAdBackground
 import com.umc.hackathon.frontend.ui.theme.mogiAdIconBackground
 import com.umc.hackathon.frontend.ui.theme.mogiCommunityAvatarBackground
@@ -668,52 +666,5 @@ private fun levelDescription(level: MosquitoLevel): String {
         MosquitoLevel.NORMAL -> "보통"
         MosquitoLevel.HIGH -> "높은"
         MosquitoLevel.VERY_HIGH -> "매우 높은"
-    }
-}
-
-@Preview(
-    name = "Community Sheet",
-    showBackground = true,
-    widthDp = 430,
-    heightDp = 860
-)
-@Composable
-private fun CommunitySheetPreview() {
-    UMCHackathonFrontendTheme {
-        CommunitySheet(
-            districtName = "강남구",
-            mosquitoIndex = 72,
-            level = MosquitoLevel.HIGH,
-            posts = listOf(
-                CommunityPost(
-                    id = 1L,
-                    districtName = "강남구",
-                    category = "제보",
-                    title = "압구정 모기 심해요",
-                    content = "압구정 로데오 쪽도 오늘 꽤 심하네요. 야외 테라스 카페를 가실 분은 기피제 필수!",
-                    authorName = "압구정러",
-                    createdAtText = "4시간 전",
-                    likeCount = 29,
-                    commentCount = 3
-                ),
-                CommunityPost(
-                    id = 2L,
-                    districtName = "강남구",
-                    category = "제보",
-                    title = "강남역 근처 조심",
-                    content = "올해 강남구 모기 진짜 심하네요. 아이들 학원 보내는데 걱정됩니다",
-                    authorName = "강남토박이",
-                    createdAtText = "3시간 전",
-                    likeCount = 72,
-                    commentCount = 8
-                )
-            ),
-            onLikeClick = {},
-            onEditClick = {},
-            onDeleteClick = {},
-            onWriteClick = {},
-            onCloseClick = {},
-            onCollapseClick = {}
-        )
     }
 }

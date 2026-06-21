@@ -19,12 +19,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.umc.hackathon.frontend.R
-import com.umc.hackathon.frontend.ui.theme.UMCHackathonFrontendTheme
 import kotlinx.coroutines.delay
 
 @Composable
@@ -80,22 +78,6 @@ private fun OnboardingScreen(
             fontSize = 16.sp,
             lineHeight = 22.sp,
             fontWeight = FontWeight.Medium
-        )
-    }
-}
-
-@Preview(
-    name = "Onboarding",
-    showBackground = true,
-    widthDp = 360,
-    heightDp = 640
-)
-@Composable
-private fun OnboardingScreenPreview() {
-    UMCHackathonFrontendTheme {
-        OnboardingScreen(
-            appName = "모기맵",
-            subtitle = "서울 실시간 모기 지수"
         )
     }
 }
