@@ -54,6 +54,7 @@ fun RankingBottomSheet(
     modifier: Modifier = Modifier
 ) {
     var expanded by rememberSaveable { mutableStateOf(false) }
+    /* 랭킹 API 값이 없으면 지도에 표시 중인 모기 지수 목록으로 TOP 순위를 임시 계산 */
     val ranking = districtRanking?.items
         ?.takeIf { it.isNotEmpty() }
         ?: districtIndexes
@@ -70,9 +71,11 @@ fun RankingBottomSheet(
     val rankingDateText = todayText()
 
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+        /* 접힌 상태는 TOP3만 보이고, 펼친 상태는 화면 높이의 70%까지 확장 */
         val collapsedHeight = 315.dp
         val expandedHeight = maxHeight * 0.7f
         val sheetHeight = if (expanded) expandedHeight else collapsedHeight
+        /* 상위 3개는 카드로 4위 이하는 펼친 상태에서 리스트로 표시 */
         val topThree = ranking.take(3)
         val lowerRanking = ranking.drop(3)
 
@@ -155,6 +158,7 @@ fun RankingBottomSheet(
                     ),
                 verticalArrangement = Arrangement.spacedBy(if (expanded) 0.dp else 12.dp)
             ) {
+                /* 펼친 상태에서만 전체 목록 스크롤을 허용 */
                 TopRankingCards(rankingItems = topThree)
 
                 if (expanded && lowerRanking.isNotEmpty()) {
@@ -215,6 +219,7 @@ private fun TopRankingCard(
 ) {
     val context = LocalContext.current
     val assetPath = rankingImageAssetPath(district.districtName)
+    /* 지역별 랭킹 이미지를 assets에서 읽고 없으면 순위별 배경색을 사용 */
     val imageBitmap = assetPath?.let { path ->
         runCatching {
             context.assets.open(path).use { input ->
@@ -391,6 +396,7 @@ private fun MosquitoActivityChip(level: MosquitoLevel) {
 }
 
 private fun rankingImageAssetPath(districtName: String): String? {
+    /* 지역 이름과 assets/ranking 이미지 파일명을 매칭 */
     return when (districtName) {
         "강남구" -> "ranking/gangnam.jpg"
         "강동구" -> "ranking/gangdong.jpg"
@@ -471,6 +477,7 @@ private fun todayText(): String {
 }
 
 private fun rankingProgressColor(index: Int): Color {
+    /* 모기 지수 구간에 따라 순위 리스트의 숫자 색상을 변경 */
     return when {
         index >= 76 -> Color(0xFFD02020)
         index >= 51 -> Color(0xFFC25A20)
