@@ -30,6 +30,7 @@ class MyPageViewModel(
         private set
 
     fun loadProfile() {
+        /* 로그인 직후 상단 프로필 카드에 필요한 사용자 정보만 조회 */
         viewModelScope.launch {
             runCatching {
                 repository.getMyProfile()
@@ -56,6 +57,7 @@ class MyPageViewModel(
         viewModelScope.launch {
             uiState = uiState.copy(isLoading = true, errorMessage = null)
 
+            /* 마이페이지는 프로필 정보와 현재 위치의 지역 정보를 함께 보여줌 */
             val profileResult = runCatching {
                 repository.getMyProfile()
             }
@@ -69,6 +71,7 @@ class MyPageViewModel(
             val profile = profileResult.getOrNull()
             val district = districtResult.getOrNull()
 
+            /* 둘 중 하나라도 성공하면 가능한 정보만 화면에 반영 */
             if (profileResult.isSuccess || districtResult.isSuccess) {
                 uiState = uiState.copy(
                     isLoading = false,
@@ -104,6 +107,7 @@ class MyPageViewModel(
         longitude: Double,
         locationStatusText: String = "GPS 기반 현재 위치"
     ) {
+        /* 비로그인 상태에서는 프로필 없이 현재 지역 모기 지수만 조회 */
         viewModelScope.launch {
             uiState = uiState.copy(isLoading = true, errorMessage = null)
 
@@ -138,6 +142,7 @@ class MyPageViewModel(
     }
 
     fun updateNickname(nickname: String) {
+        /* 닉네임 수정 성공 시 변경된 닉네임만 UI 상태에 반영 */
         viewModelScope.launch {
             runCatching {
                 repository.updateNickname(nickname)
@@ -158,6 +163,7 @@ class MyPageViewModel(
         authTokenStore: AuthTokenStore,
         onLoggedOut: () -> Unit
     ) {
+        /* 서버 로그아웃이 끝나면 로컬에 저장된 토큰도 함께 삭제 */
         viewModelScope.launch {
             runCatching {
                 repository.logout()

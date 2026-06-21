@@ -74,6 +74,7 @@ fun CommunitySheet(
     onCloseClick: () -> Unit,
     onCollapseClick: () -> Unit
 ) {
+    /* 최신순은 서버에서 받은 순서를 유지하고 인기순은 현재 목록의 좋아요 수 기준으로 정렬 */
     var sortType by remember { mutableStateOf(CommunitySortType.LATEST) }
     val sortedPosts = when (sortType) {
         CommunitySortType.LATEST -> posts
@@ -240,6 +241,7 @@ private fun MosquitoIndexCard(
 private fun MosquitoIndexProgress(
     index: Int
 ) {
+    /* 0~100 모기 지수를 색상 바 위 위치 값으로 변환 */
     val progress = (index.coerceIn(0, 100) / 100f)
     val progressBrush = Brush.horizontalGradient(
         colors = listOf(
@@ -399,6 +401,7 @@ private fun CommunityPostItem(
                     fontWeight = FontWeight.Bold
                 )
 
+                /* 내가 작성한 게시글에만 수정/삭제 관리 메뉴를 노출 */
                 if (post.isMine) {
                     Box {
                         Text(
@@ -502,6 +505,7 @@ private fun CommunityPostItem(
         }
     }
 
+    /* 삭제는 바로 실행하지 않고 확인 다이얼로그를 거친 뒤 API 요청 */
     if (isDeleteDialogVisible) {
         DeletePostDialog(
             onDismissRequest = { isDeleteDialogVisible = false },

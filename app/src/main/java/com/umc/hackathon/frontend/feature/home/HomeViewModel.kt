@@ -145,6 +145,7 @@ class HomeViewModel(
         }
 
         val nextLiked = !post.isLiked
+        /* 좋아요는 먼저 화면에 반영하고, 서버 응답의 likeCount가 있으면 그 값으로 보정 */
         val optimisticLikeCount = if (nextLiked) {
             post.likeCount + 1
         } else {
@@ -182,6 +183,7 @@ class HomeViewModel(
     fun deletePost(post: CommunityPost) {
         if (!post.isMine) return
 
+        /* 삭제는 먼저 목록에서 제거하고, API 실패 시 이전 목록으로 복구 */
         val previousPosts = uiState.recentPosts
         uiState = uiState.copy(
             recentPosts = uiState.recentPosts.filterNot { it.id == post.id }
@@ -243,6 +245,7 @@ class HomeViewModel(
             it.districtName == districtName
         }
 
+        /* 지역 id를 찾을 수 있으면 실제 지역별 게시글 API를 우선 사용 */
         return if (selectedDistrict == null) {
             communityRepository.getRecentPosts(districtName)
         } else {

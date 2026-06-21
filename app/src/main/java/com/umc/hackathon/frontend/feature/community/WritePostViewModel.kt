@@ -42,6 +42,7 @@ class WritePostViewModel(
     fun loadPostForEdit(postId: Long) {
         if (postId <= 0L) return
 
+        /* 수정 화면에서는 기존 게시글 내용을 먼저 불러와 입력창에 채움 */
         viewModelScope.launch {
             runCatching {
                 communityRepository.getPost(postId)
@@ -84,6 +85,7 @@ class WritePostViewModel(
                 errorMessage = null
             )
 
+            /* 화면에서는 제목을 받지 않지만 API 명세에 title 필드가 필요해 고정값으로 전송 */
             runCatching {
                 communityRepository.createPost(
                     districtId = districtId,
@@ -118,6 +120,7 @@ class WritePostViewModel(
                 errorMessage = null
             )
 
+            /* 작성 화면을 재사용하되 postId가 있으면 PATCH 수정 요청으로 처리 */
             runCatching {
                 communityRepository.updatePost(
                     postId = postId,

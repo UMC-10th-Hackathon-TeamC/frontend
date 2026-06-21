@@ -20,6 +20,7 @@ class RemoteCommunityRepository(
         cursor: Long?,
         limit: Int?
     ): List<CommunityPost> {
+        /* 서버 목록 응답 DTO를 화면에서 쓰는 CommunityPost 모델로 변환 */
         return communityApi.getPostsByDistrict(
             districtId = districtId,
             cursor = cursor,
@@ -43,6 +44,7 @@ class RemoteCommunityRepository(
         content: String,
         authorName: String
     ): CommunityPost {
+        /* 생성 응답에는 본문이 없어서 요청에 사용한 content와 authorName을 화면 모델에 함께 반영 */
         val response = communityApi.createPost(
             CreatePostRequestDto(
                 districtId = districtId,
@@ -72,6 +74,7 @@ class RemoteCommunityRepository(
         title: String?,
         content: String?
     ): CommunityPost? {
+        /* 수정 성공 응답 구조가 달라도 성공 여부만 확인한 뒤 상세 API로 최신 게시글을 다시 조회 */
         communityApi.updatePost(
             postId = postId,
             request = UpdatePostRequestDto(
