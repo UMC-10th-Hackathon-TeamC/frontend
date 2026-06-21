@@ -111,14 +111,14 @@ class FakeCommunityRepository : CommunityRepository {
         }
     }
 
-    override suspend fun likePost(postId: Long): Int {
+    override suspend fun likePost(postId: Long): Int? {
         return updateLikeState(
             postId = postId,
             isLiked = true
         )
     }
 
-    override suspend fun unlikePost(postId: Long): Int {
+    override suspend fun unlikePost(postId: Long): Int? {
         return updateLikeState(
             postId = postId,
             isLiked = false
