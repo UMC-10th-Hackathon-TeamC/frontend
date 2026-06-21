@@ -80,6 +80,7 @@ fun MyPageRoute(
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
+        /* 위치 권한 결과에 따라 실제 위치 또는 기본 위치로 마이페이지 정보를 로드 */
         val isGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
             permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
 
@@ -98,6 +99,7 @@ fun MyPageRoute(
     }
 
     LaunchedEffect(Unit) {
+        /* 토큰 존재 여부로 로그인 상태를 먼저 확인한 뒤 화면 데이터를 불러옴 */
         val hasToken = authTokenStore.hasAccessToken()
         isLoggedIn = hasToken
 
@@ -127,6 +129,7 @@ fun MyPageRoute(
         isLoggedIn = isLoggedIn == true,
         onBackClick = onBackClick,
         onLoginClick = {
+            /* 비로그인 상태에서 프로필 영역을 누르면 Google 로그인 URL을 브라우저로 열기 */
             val loginIntent = Intent(
                 Intent.ACTION_VIEW,
                 Uri.parse(authRepository.getGoogleLoginUrl())
@@ -134,6 +137,7 @@ fun MyPageRoute(
             context.startActivity(loginIntent)
         },
         onLogoutClick = {
+            /* 로그아웃은 서버 요청 후 로컬 토큰까지 삭제 */
             viewModel.logout(
                 authTokenStore = authTokenStore,
                 onLoggedOut = onLoggedOut
@@ -162,6 +166,7 @@ private fun MyPageScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
+        /* 토큰 확인이 끝나기 전에는 로그인/비로그인 화면을 확정하지 않음 */
         if (!isAuthChecked) {
             Text(
                 modifier = Modifier.fillMaxWidth(),
@@ -173,6 +178,7 @@ private fun MyPageScreen(
             return@Column
         }
 
+        /* 로그인 여부에 따라 프로필 카드와 로그인 유도 카드를 분기 */
         if (isLoggedIn) {
             ProfileCard(uiState = uiState)
         } else {
@@ -368,6 +374,7 @@ private fun ProfileImage(
     profileImageUrl: String?,
     nickname: String
 ) {
+    /* 서버 프로필 이미지가 없으면 닉네임 첫 글자를 대체 이미지로 표시 */
     Box(
         modifier = Modifier
             .size(78.dp)
@@ -409,6 +416,7 @@ private fun ProfileImageFallback(
 private fun MyDistrictCard(
     uiState: MyPageUiState
 ) {
+    /* 현재 위치 또는 기본 위치 기준의 지역 모기 지수를 표시 */
     MyPageCard {
         Column(
             modifier = Modifier
@@ -601,6 +609,7 @@ private fun mosquitoLevelTextColor(level: MosquitoLevel): Color {
 }
 
 private fun hasLocationPermission(context: Context): Boolean {
+    /* 정확한 위치와 대략적 위치 중 하나라도 허용되면 위치 기반 조회 가능 */
     val hasFineLocation = ContextCompat.checkSelfPermission(
         context,
         Manifest.permission.ACCESS_FINE_LOCATION
@@ -619,6 +628,7 @@ private fun loadMyPageWithDeviceLocation(
     viewModel: MyPageViewModel,
     isLoggedIn: Boolean
 ) {
+    /* 권한이 없거나 위치를 못 가져오면 기본 위치 기준으로 대체 */
     if (!hasLocationPermission(context)) {
         loadMyPageWithDefaultLocation(
             viewModel = viewModel,
@@ -639,6 +649,7 @@ private fun loadMyPageWithDeviceLocation(
                 return@addOnSuccessListener
             }
 
+            /* 로그인 사용자는 프로필과 지역 정보를 함께, 게스트는 지역 정보만 조회 */
             if (isLoggedIn) {
                 viewModel.loadMyPage(
                     latitude = location.latitude,
@@ -663,6 +674,7 @@ private fun loadMyPageWithDefaultLocation(
     viewModel: MyPageViewModel,
     isLoggedIn: Boolean
 ) {
+    /* 위치 조회 실패 시 강남구 기본 좌표로 마이페이지 데이터를 로드 */
     if (isLoggedIn) {
         viewModel.loadMyPageWithDefaultLocation()
     } else {
