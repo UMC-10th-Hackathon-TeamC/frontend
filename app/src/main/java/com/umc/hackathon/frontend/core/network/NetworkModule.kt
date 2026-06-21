@@ -15,6 +15,7 @@ object NetworkModule {
     private lateinit var authTokenStore: AuthTokenStore
 
     fun initialize(context: Context) {
+        /* 네트워크 요청에서 토큰을 꺼낼 수 있도록 앱 시작 시 저장소를 초기화 */
         if (!::authTokenStore.isInitialized) {
             authTokenStore = AuthTokenStore(context.applicationContext)
         }
@@ -30,12 +31,14 @@ object NetworkModule {
 
     private val okHttpClient by lazy {
         OkHttpClient.Builder()
+            /* 모든 API 요청에 로그인 토큰을 자동으로 붙이는 인터셉터 */
             .addInterceptor(AuthInterceptor(requireAuthTokenStore()))
         .addInterceptor(loggingInterceptor)
         .build()
     }
 
     private val retrofit by lazy {
+        /* local.properties의 API_BASE_URL을 기준으로 실제 서버 요청 생성 */
         Retrofit.Builder()
             .baseUrl(BuildConfig.API_BASE_URL)
             .client(okHttpClient)

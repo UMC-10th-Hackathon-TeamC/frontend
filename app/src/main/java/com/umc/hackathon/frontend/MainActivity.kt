@@ -64,10 +64,12 @@ class MainActivity : ComponentActivity() {
         val uri = intent?.data ?: return
         if (!uri.isOAuthCallback()) return
 
+        /* 백엔드가 딥링크로 전달한 토큰을 query parameter에서 추출 */
         val accessToken = uri.getQueryParameter("accessToken").orEmpty()
         val refreshToken = uri.getQueryParameter("refreshToken").orEmpty()
         if (accessToken.isBlank() || refreshToken.isBlank()) return
 
+        /* 토큰 저장이 끝난 뒤 홈 화면 이동 신호를 발생 */
         lifecycleScope.launch {
             authTokenStore.saveTokens(
                 accessToken = accessToken,
@@ -78,6 +80,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun Uri.isOAuthCallback(): Boolean {
+        /* mogi://oauth/callback 형태의 로그인 완료 딥링크만 처리 */
         return scheme == "mogi" && host == "oauth" && path == "/callback"
     }
 }
