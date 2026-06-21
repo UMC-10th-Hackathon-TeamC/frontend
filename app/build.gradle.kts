@@ -13,9 +13,8 @@ val localProperties = Properties().apply {
 }
 val apiBaseUrl = localProperties.getProperty(
     "API_BASE_URL",
-    "http://10.0.2.2:3000/api/v1/"
+    "http://umc10-node.kro.kr/"
 )
-val useMockApi = localProperties.getProperty("USE_MOCK_API", "true").toBoolean()
 
 android {
     namespace = "com.umc.hackathon.frontend"
@@ -36,7 +35,6 @@ android {
         manifestPlaceholders["NAVER_MAP_CLIENT_ID"] =
             localProperties.getProperty("NAVER_MAP_CLIENT_ID", "")
         buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
-        buildConfigField("Boolean", "USE_MOCK_API", useMockApi.toString())
     }
 
     buildTypes {
@@ -76,7 +74,6 @@ dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
-    implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
 
     testImplementation(libs.junit)

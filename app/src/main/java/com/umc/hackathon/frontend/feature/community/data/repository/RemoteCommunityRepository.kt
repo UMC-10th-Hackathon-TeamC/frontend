@@ -78,7 +78,7 @@ class RemoteCommunityRepository(
                 title = title,
                 content = content
             )
-        ).requireData()
+        ).requireSuccess()
 
         return getPost(postId)
     }
@@ -87,16 +87,16 @@ class RemoteCommunityRepository(
         communityApi.deletePost(postId).requireSuccess()
     }
 
-    override suspend fun likePost(postId: Long): Int {
-        return communityApi.likePost(postId)
-            .requireData()
-            .likeCount
+    override suspend fun likePost(postId: Long): Int? {
+        val response = communityApi.likePost(postId)
+        response.requireSuccess()
+        return response.data?.likeCount
     }
 
-    override suspend fun unlikePost(postId: Long): Int {
-        return communityApi.unlikePost(postId)
-            .requireData()
-            .likeCount
+    override suspend fun unlikePost(postId: Long): Int? {
+        val response = communityApi.unlikePost(postId)
+        response.requireSuccess()
+        return response.data?.likeCount
     }
 }
 

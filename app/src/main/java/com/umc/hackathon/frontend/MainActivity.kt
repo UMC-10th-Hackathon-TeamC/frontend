@@ -18,47 +18,19 @@ import com.umc.hackathon.frontend.core.navigation.MogiMapNavHost
 import com.umc.hackathon.frontend.ui.theme.UMCHackathonFrontendTheme
 import kotlinx.coroutines.launch
 
-data class PendingWritePostDestination(
-    val districtId: Int,
-    val districtName: String
-)
-
-object PendingWritePostNavigation {
-    var districtId: Int? = null
-    var districtName: String? = null
-
-    fun consumeDestination(): PendingWritePostDestination? {
-        val consumedDistrictId = districtId
-        val consumedDistrictName = districtName
-        districtId = null
-        districtName = null
-
-        return if (consumedDistrictId == null || consumedDistrictName.isNullOrBlank()) {
-            null
-        } else {
-            PendingWritePostDestination(
-                districtId = consumedDistrictId,
-                districtName = consumedDistrictName
-            )
-        }
-    }
-}
-
 class MainActivity : ComponentActivity() {
     private val shouldNavigateHome = mutableStateOf(false)
-    private val pendingWritePostDestination = mutableStateOf<PendingWritePostDestination?>(null)
     private val startDestination = mutableStateOf<String?>(null)
-    private lateinit var authTokenStore: AuthTokenStore
+    private val authTokenStore by lazy {
+        AuthTokenStore(applicationContext)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        authTokenStore = AuthTokenStore(applicationContext)
         NetworkModule.initialize(applicationContext)
-        val isOAuthCallback = handleOAuthCallback(intent)
-        if (!isOAuthCallback) {
-            loadStartDestination()
-        }
+        loadStartDestination()
+        handleOAuthCallback(intent)
 
         setContent {
             UMCHackathonFrontendTheme {
@@ -68,12 +40,8 @@ class MainActivity : ComponentActivity() {
                             innerPadding = innerPadding,
                             startDestination = destination,
                             shouldNavigateHome = shouldNavigateHome.value,
-                            pendingWritePostDestination = pendingWritePostDestination.value,
                             onHomeNavigationHandled = {
                                 shouldNavigateHome.value = false
-                            },
-                            onPendingWritePostHandled = {
-                                pendingWritePostDestination.value = null
                             }
                         )
                     }
@@ -88,42 +56,28 @@ class MainActivity : ComponentActivity() {
         handleOAuthCallback(intent)
     }
 
-    private fun handleOAuthCallback(intent: Intent?): Boolean {
-        val uri = intent?.data ?: return false
-        if (!uri.isOAuthCallback()) return false
-
-        val accessToken = uri.getQueryParameter("accessToken").orEmpty()
-        val refreshToken = uri.getQueryParameter("refreshToken").orEmpty()
-        val userId = uri.getQueryParameter("userId").orEmpty()
-        if (accessToken.isBlank() || refreshToken.isBlank()) return false
-
-        startDestination.value = AppRoute.Home.path
-        shouldNavigateHome.value = true
-        pendingWritePostDestination.value = PendingWritePostNavigation.consumeDestination()
-
-        lifecycleScope.launch {
-            authTokenStore.saveTokens(
-                accessToken = accessToken,
-                refreshToken = refreshToken,
-                userId = userId
-            )
-        }
-        return true
-    }
-
     private fun loadStartDestination() {
         startDestination.value = AppRoute.Onboarding.path
     }
 
-    private fun Uri.isOAuthCallback(): Boolean {
-        return scheme == OAUTH_CALLBACK_SCHEME &&
-            host == OAUTH_CALLBACK_HOST &&
-            path == OAUTH_CALLBACK_PATH
+    private fun handleOAuthCallback(intent: Intent?) {
+        val uri = intent?.data ?: return
+        if (!uri.isOAuthCallback()) return
+
+        val accessToken = uri.getQueryParameter("accessToken").orEmpty()
+        val refreshToken = uri.getQueryParameter("refreshToken").orEmpty()
+        if (accessToken.isBlank() || refreshToken.isBlank()) return
+
+        lifecycleScope.launch {
+            authTokenStore.saveTokens(
+                accessToken = accessToken,
+                refreshToken = refreshToken
+            )
+            shouldNavigateHome.value = true
+        }
     }
 
-    private companion object {
-        const val OAUTH_CALLBACK_SCHEME = "mogi"
-        const val OAUTH_CALLBACK_HOST = "oauth"
-        const val OAUTH_CALLBACK_PATH = "/callback"
+    private fun Uri.isOAuthCallback(): Boolean {
+        return scheme == "mogi" && host == "oauth" && path == "/callback"
     }
 }

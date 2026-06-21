@@ -6,7 +6,6 @@ import com.umc.hackathon.frontend.core.data.AuthTokenStore
 import com.umc.hackathon.frontend.feature.community.data.api.CommunityApi
 import com.umc.hackathon.frontend.feature.home.data.api.HomeApi
 import com.umc.hackathon.frontend.feature.mypage.data.api.MyPageApi
-import com.umc.hackathon.frontend.feature.onboarding.data.api.AuthApi
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -29,33 +28,9 @@ object NetworkModule {
         }
     }
 
-    private val refreshOkHttpClient by lazy {
-        OkHttpClient.Builder()
-            .addInterceptor(loggingInterceptor)
-            .build()
-    }
-
-    private val refreshRetrofit by lazy {
-        Retrofit.Builder()
-            .baseUrl(BuildConfig.API_BASE_URL)
-            .client(refreshOkHttpClient)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-    }
-
-    private val refreshAuthApi: AuthApi by lazy {
-        refreshRetrofit.create(AuthApi::class.java)
-    }
-
     private val okHttpClient by lazy {
         OkHttpClient.Builder()
             .addInterceptor(AuthInterceptor(requireAuthTokenStore()))
-            .authenticator(
-                TokenRefreshAuthenticator(
-                    authTokenStore = requireAuthTokenStore(),
-                    authApi = refreshAuthApi
-                )
-            )
         .addInterceptor(loggingInterceptor)
         .build()
     }
@@ -70,7 +45,6 @@ object NetworkModule {
 
     val homeApi: HomeApi by lazy { retrofit.create(HomeApi::class.java) }
     val myPageApi: MyPageApi by lazy { retrofit.create(MyPageApi::class.java) }
-    val authApi: AuthApi by lazy { retrofit.create(AuthApi::class.java) }
     val communityApi: CommunityApi by lazy { retrofit.create(CommunityApi::class.java) }
 
     private fun requireAuthTokenStore(): AuthTokenStore {

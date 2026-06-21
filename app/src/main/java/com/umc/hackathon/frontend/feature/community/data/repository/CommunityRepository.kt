@@ -31,7 +31,7 @@ interface CommunityRepository {
 
     suspend fun deletePost(postId: Long)
 
-    suspend fun likePost(postId: Long): Int
+    suspend fun likePost(postId: Long): Int?
 
-    suspend fun unlikePost(postId: Long): Int
+    suspend fun unlikePost(postId: Long): Int?
 }

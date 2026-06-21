@@ -89,7 +89,7 @@ class WritePostViewModel(
                     districtId = districtId,
                     districtName = districtName,
                     category = uiState.selectedCategory,
-                    title = "",  // 명세상 title 필드가 필요해 빈 문자열로 전송
+                    title = POST_TITLE_PLACEHOLDER,
                     content = uiState.content,
                     authorName = uiState.authorName.ifBlank { "모기맵유저" }
                 )
@@ -121,7 +121,7 @@ class WritePostViewModel(
             runCatching {
                 communityRepository.updatePost(
                     postId = postId,
-                    title = "",
+                    title = POST_TITLE_PLACEHOLDER,
                     content = uiState.content
                 )
             }.onSuccess {
@@ -136,3 +136,5 @@ class WritePostViewModel(
         }
     }
 }
+
+private const val POST_TITLE_PLACEHOLDER = "12341235"

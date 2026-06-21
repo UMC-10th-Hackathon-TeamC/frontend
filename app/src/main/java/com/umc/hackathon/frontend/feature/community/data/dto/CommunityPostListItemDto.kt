@@ -15,11 +15,7 @@ data class CommunityPostListItemDto(
     val liked: Boolean? = null,
     val isLiked: Boolean? = null,
     val likedByMe: Boolean? = null,
-    val mine: Boolean? = null,
-    val isMine: Boolean? = null,
-    val writtenByMe: Boolean? = null,
-    val owner: Boolean? = null,
-    val isAuthor: Boolean? = null
+    val isMine: Boolean? = null
 ) {
     fun toDomain(districtName: String): CommunityPost {
         return CommunityPost(
@@ -27,13 +23,13 @@ data class CommunityPostListItemDto(
             districtName = districtName,
             category = category,
             title = title,
-            content = content ?: title,
+            content = content.orEmpty(),
             authorName = author,
             createdAtText = createdAt.toRelativeTimeTextFromIso(),
             likeCount = likeCount,
             commentCount = commentCount,
             isLiked = isLiked ?: liked ?: likedByMe ?: false,
-            isMine = isMine ?: mine ?: writtenByMe ?: owner ?: isAuthor ?: false
+            isMine = isMine ?: false
         )
     }
 }

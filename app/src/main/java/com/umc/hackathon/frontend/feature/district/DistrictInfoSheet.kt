@@ -29,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.umc.hackathon.frontend.core.model.DistrictMosquitoDetail
 import com.umc.hackathon.frontend.core.model.DistrictMosquitoIndex
 import com.umc.hackathon.frontend.core.model.MosquitoLevel
 import com.umc.hackathon.frontend.feature.community.model.CommunityPost
@@ -56,13 +57,15 @@ import com.umc.hackathon.frontend.ui.theme.mogiTipChipContent
 @Composable
 fun DistrictInfoSheet(
     selectedDistrict: DistrictMosquitoIndex?,
+    selectedDistrictDetail: DistrictMosquitoDetail?,
     recentPosts: List<CommunityPost>,
     onCommunityClick: () -> Unit,
     onCloseClick: () -> Unit
 ) {
-    val districtName = selectedDistrict?.districtName ?: "강남구"
-    val mosquitoIndex = selectedDistrict?.mosquitoIndex ?: 72
-    val level = selectedDistrict?.level ?: MosquitoLevel.HIGH
+    val districtName = selectedDistrictDetail?.districtName ?: selectedDistrict?.districtName ?: "강남구"
+    val mosquitoIndex = selectedDistrictDetail?.mosquitoIndex ?: selectedDistrict?.mosquitoIndex ?: 72
+    val level = selectedDistrictDetail?.level ?: selectedDistrict?.level ?: MosquitoLevel.HIGH
+    val description = selectedDistrictDetail?.description
 
     Column(
         modifier = Modifier
@@ -76,6 +79,7 @@ fun DistrictInfoSheet(
             districtName = districtName,
             mosquitoIndex = mosquitoIndex,
             level = level,
+            description = description,
             onCloseClick = onCloseClick
         )
 
@@ -110,12 +114,13 @@ private fun DistrictSummaryArea(
     districtName: String,
     mosquitoIndex: Int,
     level: MosquitoLevel,
+    description: String?,
     onCloseClick: () -> Unit
 ) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 28.dp, vertical = 22.dp)
+            .padding(horizontal = 16.dp, vertical = 22.dp)
             .clip(RoundedCornerShape(10.dp))
             .background(mogiMosquitoCardBackground)
             .padding(horizontal = 20.dp, vertical = 18.dp)
@@ -174,7 +179,7 @@ private fun DistrictSummaryArea(
             Spacer(modifier = Modifier.height(18.dp))
 
             Text(
-                text = mosquitoIndexDescription(
+                text = description?.takeIf { it.isNotBlank() } ?: mosquitoIndexDescription(
                     districtName = districtName,
                     mosquitoIndex = mosquitoIndex,
                     level = level
@@ -242,7 +247,7 @@ private fun RecentPostsArea(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 36.dp, vertical = 24.dp)
+            .padding(horizontal = 16.dp, vertical = 24.dp)
     ) {
         Text(
             text = "최근 게시글",

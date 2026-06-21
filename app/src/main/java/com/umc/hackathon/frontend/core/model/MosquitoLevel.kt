@@ -24,6 +24,8 @@ fun String.toMosquitoLevel(): MosquitoLevel {
         "보통" -> MosquitoLevel.NORMAL
         "높음" -> MosquitoLevel.HIGH
         "매우높음" -> MosquitoLevel.VERY_HIGH
+        "경보" -> MosquitoLevel.HIGH
+        "위험" -> MosquitoLevel.VERY_HIGH
         else -> MosquitoLevel.NORMAL
     }
 }

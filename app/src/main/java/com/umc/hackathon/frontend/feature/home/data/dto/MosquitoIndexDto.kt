@@ -5,11 +5,12 @@ import com.umc.hackathon.frontend.core.model.DistrictMosquitoIndex
 import com.umc.hackathon.frontend.core.model.DistrictRanking
 import com.umc.hackathon.frontend.core.model.DistrictRankingItem
 import com.umc.hackathon.frontend.core.model.toMosquitoLevel
+import kotlin.math.roundToInt
 
 data class MosquitoIndexDto(
     val id: Int,
     val name: String,
-    val mosquitoIndex: Int,
+    val mosquitoIndex: Double,
     val latitude: Double,
     val longitude: Double,
     val level: String
@@ -18,7 +19,7 @@ data class MosquitoIndexDto(
         return DistrictMosquitoIndex(
             id = id,
             districtName = name,
-            mosquitoIndex = mosquitoIndex,
+            mosquitoIndex = mosquitoIndex.roundToInt(),
             latitude = latitude,
             longitude = longitude,
             level = level.toMosquitoLevel()
@@ -35,7 +36,7 @@ data class DistrictDetailDto(
     val name: String,
     val latitude: Double,
     val longitude: Double,
-    val mosquitoIndex: Int,
+    val mosquitoIndex: Double,
     val level: String,
     val description: String,
     val updatedAt: String
@@ -44,7 +45,7 @@ data class DistrictDetailDto(
         return DistrictMosquitoDetail(
             id = id,
             districtName = name,
-            mosquitoIndex = mosquitoIndex,
+            mosquitoIndex = mosquitoIndex.roundToInt(),
             latitude = latitude,
             longitude = longitude,
             level = level.toMosquitoLevel(),
@@ -70,7 +71,7 @@ data class DistrictRankingItemDto(
     val rank: Int,
     val id: Int,
     val name: String,
-    val mosquitoIndex: Int,
+    val mosquitoIndex: Double,
     val level: String
 ) {
     fun toDomain(): DistrictRankingItem {
@@ -78,7 +79,7 @@ data class DistrictRankingItemDto(
             rank = rank,
             id = id,
             districtName = name,
-            mosquitoIndex = mosquitoIndex,
+            mosquitoIndex = mosquitoIndex.roundToInt(),
             level = level.toMosquitoLevel()
         )
     }

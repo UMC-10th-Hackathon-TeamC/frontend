@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.umc.hackathon.frontend.core.model.DistrictMosquitoDetail
 import com.umc.hackathon.frontend.core.model.DistrictMosquitoIndex
 import com.umc.hackathon.frontend.core.model.DistrictRanking
 import com.umc.hackathon.frontend.feature.community.data.repository.CommunityRepository
@@ -22,6 +23,7 @@ data class HomeUiState(
     val profileImageUrl: String? = null,
     val districtIndexes: List<DistrictMosquitoIndex> = emptyList(),
     val districtRanking: DistrictRanking? = null,
+    val selectedDistrictDetail: DistrictMosquitoDetail? = null,
     val recentPosts: List<CommunityPost> = emptyList(),
     val selectedDistrict: String? = null,
     val isRankingSheetVisible: Boolean = false,
@@ -77,10 +79,19 @@ class HomeViewModel(
 
     fun showDistrictSheet(districtName: String) {
         viewModelScope.launch {
+            val selectedDistrict = uiState.districtIndexes.firstOrNull {
+                it.districtName == districtName
+            }
+            val districtDetail = selectedDistrict?.let { district ->
+                runCatching {
+                    homeRepository.getDistrictDetail(district.id)
+                }.getOrNull()
+            }
             val recentPosts = loadPosts(districtName)
 
             uiState = uiState.copy(
                 selectedDistrict = districtName,
+                selectedDistrictDetail = districtDetail,
                 recentPosts = recentPosts,
                 isRankingSheetVisible = false,
                 isDistrictSheetVisible = true,
@@ -134,10 +145,15 @@ class HomeViewModel(
         }
 
         val nextLiked = !post.isLiked
+        val optimisticLikeCount = if (nextLiked) {
+            post.likeCount + 1
+        } else {
+            (post.likeCount - 1).coerceAtLeast(0)
+        }
         updatePostLikeState(
             postId = post.id,
             isLiked = nextLiked,
-            likeCount = if (nextLiked) post.likeCount + 1 else (post.likeCount - 1).coerceAtLeast(0)
+            likeCount = optimisticLikeCount
         )
 
         viewModelScope.launch {
@@ -151,13 +167,13 @@ class HomeViewModel(
                 updatePostLikeState(
                     postId = post.id,
                     isLiked = nextLiked,
-                    likeCount = likeCount
+                    likeCount = likeCount ?: optimisticLikeCount
                 )
             }.onFailure {
                 updatePostLikeState(
                     postId = post.id,
-                    isLiked = post.isLiked,
-                    likeCount = post.likeCount
+                    isLiked = nextLiked,
+                    likeCount = optimisticLikeCount
                 )
             }
         }
@@ -182,6 +198,7 @@ class HomeViewModel(
 
     fun dismissSheets() {
         uiState = uiState.copy(
+            selectedDistrictDetail = null,
             isRankingSheetVisible = false,
             isDistrictSheetVisible = false,
             isCommunitySheetVisible = false,
