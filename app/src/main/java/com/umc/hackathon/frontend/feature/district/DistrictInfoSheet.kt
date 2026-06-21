@@ -62,6 +62,7 @@ fun DistrictInfoSheet(
     onCommunityClick: () -> Unit,
     onCloseClick: () -> Unit
 ) {
+    /* 상세 API 값이 있으면 우선 사용하고, 없으면 지도 목록의 기본 값을 사용 */
     val districtName = selectedDistrictDetail?.districtName ?: selectedDistrict?.districtName ?: "강남구"
     val mosquitoIndex = selectedDistrictDetail?.mosquitoIndex ?: selectedDistrict?.mosquitoIndex ?: 72
     val level = selectedDistrictDetail?.level ?: selectedDistrict?.level ?: MosquitoLevel.HIGH
@@ -99,6 +100,7 @@ private fun SheetTopArea(
             .padding(top = 1.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        /* 접힌 지역 정보 시트에서 커뮤니티 전체 시트로 전환 */
         Text(
             modifier = Modifier.clickable { onCommunityClick() },
             text = "△ 커뮤니티 보기",
@@ -117,6 +119,7 @@ private fun DistrictSummaryArea(
     description: String?,
     onCloseClick: () -> Unit
 ) {
+    /* 선택된 지역의 모기 지수와 단계 설명을 카드 형태로 표시 */
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -196,6 +199,7 @@ private fun DistrictSummaryArea(
 private fun MosquitoIndexProgress(
     index: Int
 ) {
+    /* 0~100 모기 지수를 색상 바 위 위치 값으로 변환 */
     val progress = (index.coerceIn(0, 100) / 100f)
     val progressBrush = Brush.horizontalGradient(
         colors = listOf(
@@ -244,6 +248,7 @@ private fun MosquitoIndexProgress(
 private fun RecentPostsArea(
     recentPosts: List<CommunityPost>
 ) {
+    /* 지역 정보 시트에서는 최근 게시글 중 일부만 미리보기로 노출 */
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -277,6 +282,7 @@ private fun RecentPostsArea(
 private fun RecentPostRow(
     post: CommunityPost
 ) {
+    /* 좁은 시트 안에서 글 내용이 길어지지 않도록 앞부분만 표시 */
     val previewContent = if (post.content.length > 18) {
         post.content.take(18) + "..."
     } else {
@@ -330,6 +336,7 @@ private data class ChipColors(
 )
 
 private fun categoryChipColors(category: String): ChipColors {
+    /* 게시글 카테고리에 따라 칩 색상을 다르게 적용 */
     return when (category) {
         "제보" -> ChipColors(
             background = mogiReportChipBackground,
