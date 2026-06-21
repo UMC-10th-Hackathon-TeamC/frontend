@@ -78,7 +78,7 @@ class RemoteCommunityRepository(
                 title = title,
                 content = content
             )
-        ).requireData()
+        ).requireSuccess()
 
         return getPost(postId)
     }
