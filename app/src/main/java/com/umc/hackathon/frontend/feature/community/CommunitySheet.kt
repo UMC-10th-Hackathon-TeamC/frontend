@@ -19,13 +19,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -40,6 +38,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import com.umc.hackathon.frontend.core.model.MosquitoLevel
 import com.umc.hackathon.frontend.feature.community.model.CommunityPost
 import com.umc.hackathon.frontend.ui.theme.mogiAdBackground
@@ -404,29 +403,56 @@ private fun CommunityPostItem(
                     Box {
                         Text(
                             modifier = Modifier
-                                .clip(CircleShape)
+                                .clip(RoundedCornerShape(999.dp))
+                                .background(Color(0xFFEAF3E8))
+                                .border(
+                                    width = 1.dp,
+                                    color = Color(0xFFD6E4D3),
+                                    shape = RoundedCornerShape(999.dp)
+                                )
                                 .clickable { isMenuExpanded = true }
-                                .padding(horizontal = 8.dp, vertical = 2.dp),
-                            text = "⋯",
-                            color = mogiTextSecondary,
-                            fontSize = 22.sp,
-                            lineHeight = 22.sp,
+                                .padding(horizontal = 12.dp, vertical = 6.dp),
+                            text = "관리",
+                            color = mogiPrimaryGreen,
+                            fontSize = 12.sp,
+                            lineHeight = 14.sp,
                             fontWeight = FontWeight.Bold
                         )
 
                         DropdownMenu(
                             expanded = isMenuExpanded,
-                            onDismissRequest = { isMenuExpanded = false }
+                            onDismissRequest = { isMenuExpanded = false },
+                            modifier = Modifier
+                                .background(Color.White)
+                                .padding(vertical = 6.dp),
+                            containerColor = Color.White,
+                            shape = RoundedCornerShape(14.dp)
                         ) {
                             DropdownMenuItem(
-                                text = { Text(text = "수정") },
+                                text = {
+                                    PostActionMenuItem(
+                                        badgeText = "✏️",
+                                        label = "수정하기",
+                                        badgeBackground = Color(0xFFEAF3E8),
+                                        badgeColor = mogiPrimaryGreen,
+                                        labelColor = mogiTextPrimary
+                                    )
+                                },
                                 onClick = {
                                     isMenuExpanded = false
                                     onEditClick(post)
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text(text = "삭제") },
+                                text = {
+                                    PostActionMenuItem(
+                                        badgeText = "🗑️",
+                                        label = "삭제하기",
+                                        badgeBackground = Color(0xFFFFECE9),
+                                        badgeColor = Color(0xFFD34A3F),
+                                        labelColor = Color(0xFFD34A3F)
+                                    )
+                                },
                                 onClick = {
                                     isMenuExpanded = false
                                     isDeleteDialogVisible = true
@@ -477,31 +503,146 @@ private fun CommunityPostItem(
     }
 
     if (isDeleteDialogVisible) {
-        AlertDialog(
+        DeletePostDialog(
             onDismissRequest = { isDeleteDialogVisible = false },
-            title = {
-                Text(text = "게시글 삭제")
-            },
-            text = {
-                Text(text = "정말 삭제하시겠습니까?")
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        isDeleteDialogVisible = false
-                        onDeleteClick(post)
-                    }
+            onConfirmClick = {
+                isDeleteDialogVisible = false
+                onDeleteClick(post)
+            }
+        )
+    }
+}
+
+@Composable
+private fun DeletePostDialog(
+    onDismissRequest: () -> Unit,
+    onConfirmClick: () -> Unit
+) {
+    Dialog(onDismissRequest = onDismissRequest) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(22.dp))
+                .background(Color.White)
+                .padding(horizontal = 22.dp, vertical = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(54.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFFFFECE9)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "🗑️",
+                    fontSize = 24.sp,
+                    lineHeight = 28.sp
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = "게시글을 삭제할까요?",
+                color = mogiTextPrimary,
+                fontSize = 19.sp,
+                lineHeight = 24.sp,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "삭제한 게시글은 다시 복구할 수 없어요.",
+                color = mogiTextSecondary,
+                fontSize = 14.sp,
+                lineHeight = 20.sp
+            )
+
+            Spacer(modifier = Modifier.height(22.dp))
+
+            Row(modifier = Modifier.fillMaxWidth()) {
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(46.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Color(0xFFF0F4EF))
+                        .clickable { onDismissRequest() },
+                    contentAlignment = Alignment.Center
                 ) {
-                    Text(text = "삭제")
+                    Text(
+                        text = "취소",
+                        color = mogiTextSecondary,
+                        fontSize = 15.sp,
+                        lineHeight = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = { isDeleteDialogVisible = false }
+
+                Spacer(modifier = Modifier.width(10.dp))
+
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(46.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Color(0xFFD34A3F))
+                        .clickable { onConfirmClick() },
+                    contentAlignment = Alignment.Center
                 ) {
-                    Text(text = "취소")
+                    Text(
+                        text = "삭제하기",
+                        color = Color.White,
+                        fontSize = 15.sp,
+                        lineHeight = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun PostActionMenuItem(
+    badgeText: String,
+    label: String,
+    badgeBackground: Color,
+    badgeColor: Color,
+    labelColor: Color
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(28.dp)
+                .clip(CircleShape)
+                .background(badgeBackground),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = badgeText,
+                color = badgeColor,
+                fontSize = 12.sp,
+                lineHeight = 14.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        Spacer(modifier = Modifier.width(10.dp))
+
+        Text(
+            text = label,
+            color = labelColor,
+            fontSize = 14.sp,
+            lineHeight = 18.sp,
+            fontWeight = FontWeight.SemiBold
         )
     }
 }
